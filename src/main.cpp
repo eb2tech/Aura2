@@ -4,6 +4,7 @@
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 #include <XPT2046_Touchscreen.h>
+#include <Preferences.h>
 #include "ui/ui.h"
 #include "secrets.h"
 #include "weather.h"
@@ -37,6 +38,7 @@ TFT_eSPI tft = TFT_eSPI();
 SPIClass touchscreenSpi = SPIClass(VSPI);
 XPT2046_Touchscreen touchscreen(XPT2046_CS, XPT2046_IRQ);
 uint16_t touchScreenMinimumX = 200, touchScreenMaximumX = 3700, touchScreenMinimumY = 240, touchScreenMaximumY = 3800;
+Preferences preferences;
 
 void update_clock(lv_timer_t *timer)
 {
@@ -213,6 +215,10 @@ void setup()
   touchscreenSpi.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS); // Start second SPI bus for touchscreen
   touchscreen.begin(touchscreenSpi);                                         // Touchscreen init
   touchscreen.setRotation(1);                                                // Inverted landscape orientation to match screen
+
+  // Load saved preferences
+  preferences.begin("aura2", false);
+  display_seven_day_forecast = preferences.getBool("display_7day", true);
 
   // Initialize LVGL
   lv_init();

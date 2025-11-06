@@ -108,7 +108,16 @@
     "structures": [],
     "enums": []
   },
-  "actions": [],
+  "actions": [
+    {
+      "objID": "ac749b2f-2aad-4ce8-d8e7-b9045bdd6b9d",
+      "components": [],
+      "connectionLines": [],
+      "localVariables": [],
+      "userProperties": [],
+      "name": "toggle_forecast"
+    }
+  ],
   "userPages": [
     {
       "objID": "4b40eba7-b31a-468a-b887-11dfd0b6637f",
@@ -388,79 +397,159 @@
               "recolor": false
             },
             {
-              "objID": "1b7293e1-ccfe-4cb6-8ba4-b85c0c83853e",
-              "type": "LVGLLabelWidget",
-              "left": 117,
-              "top": 8,
-              "width": 192,
-              "height": 16,
-              "customInputs": [],
-              "customOutputs": [],
-              "style": {
-                "objID": "87c03f2a-2c9f-4f53-a430-3facd0018e14",
-                "useStyle": "default",
-                "conditionalStyles": [],
-                "childStyles": []
-              },
-              "timeline": [],
-              "eventHandlers": [],
-              "identifier": "forecast_type_label",
-              "leftUnit": "px",
-              "topUnit": "px",
-              "widthUnit": "px",
-              "heightUnit": "px",
-              "children": [],
-              "widgetFlags": "CLICK_FOCUSABLE|GESTURE_BUBBLE|PRESS_LOCK|SCROLLABLE|SCROLL_CHAIN_HOR|SCROLL_CHAIN_VER|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_WITH_ARROW|SNAPPABLE",
-              "hiddenFlagType": "literal",
-              "clickableFlagType": "literal",
-              "flagScrollbarMode": "",
-              "flagScrollDirection": "",
-              "scrollSnapX": "",
-              "scrollSnapY": "",
-              "checkedStateType": "literal",
-              "disabledStateType": "literal",
-              "states": "",
-              "localStyles": {
-                "objID": "10f94df2-2f08-47b2-bf64-f7d5b384e51b",
-                "definition": {
-                  "MAIN": {
-                    "DEFAULT": {
-                      "text_color": "#e4ffff"
-                    }
-                  }
-                }
-              },
-              "group": "",
-              "groupIndex": 0,
-              "text": "SEVEN DAY FORECAST",
-              "textType": "literal",
-              "longMode": "WRAP",
-              "recolor": false
-            },
-            {
-              "objID": "fec24a28-ad89-4a02-800b-bb4b8f5e4651",
+              "objID": "1bd6b3d3-1a73-4e3b-b60f-eba35b8fdb19",
               "type": "LVGLContainerWidget",
               "left": 104,
-              "top": 36,
-              "width": 205,
-              "height": 200,
+              "top": 0,
+              "width": 216,
+              "height": 240,
               "customInputs": [],
               "customOutputs": [],
               "style": {
-                "objID": "de4f967f-4022-4fc0-ea1c-493f2567dbcf",
+                "objID": "777574fe-2c7b-41b3-eab7-c1c1f79c85f4",
                 "useStyle": "default",
                 "conditionalStyles": [],
                 "childStyles": []
               },
               "timeline": [],
-              "eventHandlers": [],
-              "identifier": "temperature_grid",
+              "eventHandlers": [
+                {
+                  "objID": "e0d3a4fd-fde7-4d0b-9953-2a849d759964",
+                  "eventName": "PRESSED",
+                  "handlerType": "action",
+                  "action": "toggle_forecast",
+                  "userData": 0
+                }
+              ],
+              "identifier": "toggle_forecast_container",
               "leftUnit": "px",
               "topUnit": "px",
               "widthUnit": "px",
               "heightUnit": "px",
-              "children": [],
+              "children": [
+                {
+                  "objID": "fec24a28-ad89-4a02-800b-bb4b8f5e4651",
+                  "type": "LVGLContainerWidget",
+                  "left": 6,
+                  "top": 36,
+                  "width": 205,
+                  "height": 200,
+                  "customInputs": [],
+                  "customOutputs": [],
+                  "style": {
+                    "objID": "de4f967f-4022-4fc0-ea1c-493f2567dbcf",
+                    "useStyle": "default",
+                    "conditionalStyles": [],
+                    "childStyles": []
+                  },
+                  "timeline": [],
+                  "eventHandlers": [
+                    {
+                      "objID": "61e72afb-7b88-47d4-8ad8-661698bf852c",
+                      "eventName": "PRESSED",
+                      "handlerType": "action",
+                      "action": "toggle_forecast",
+                      "userData": 0
+                    }
+                  ],
+                  "identifier": "temperature_grid",
+                  "leftUnit": "px",
+                  "topUnit": "px",
+                  "widthUnit": "px",
+                  "heightUnit": "px",
+                  "children": [],
+                  "widgetFlags": "CLICK_FOCUSABLE|GESTURE_BUBBLE|PRESS_LOCK|SCROLLABLE|SCROLL_CHAIN_HOR|SCROLL_CHAIN_VER|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_WITH_ARROW|SNAPPABLE",
+                  "hiddenFlagType": "literal",
+                  "clickableFlag": true,
+                  "clickableFlagType": "literal",
+                  "flagScrollbarMode": "",
+                  "flagScrollDirection": "",
+                  "scrollSnapX": "",
+                  "scrollSnapY": "",
+                  "checkedStateType": "literal",
+                  "disabledStateType": "literal",
+                  "states": "",
+                  "localStyles": {
+                    "objID": "87d5f921-637b-45d6-f9d8-0eeff6d5313c",
+                    "definition": {
+                      "MAIN": {
+                        "DEFAULT": {
+                          "layout": "GRID",
+                          "bg_color": "#6f8fa8",
+                          "bg_opa": 255,
+                          "grid_template_columns": "50px 30px 60px 65px",
+                          "grid_template_rows": "25px 25px 25px 25px 25px 25px 25px",
+                          "bg_grad_dir": "NONE",
+                          "text_color": "#ffffff",
+                          "text_font": "MONTSERRAT_14"
+                        }
+                      }
+                    }
+                  },
+                  "group": "",
+                  "groupIndex": 0
+                },
+                {
+                  "objID": "1b7293e1-ccfe-4cb6-8ba4-b85c0c83853e",
+                  "type": "LVGLLabelWidget",
+                  "left": 7,
+                  "top": 8,
+                  "width": 192,
+                  "height": 16,
+                  "customInputs": [],
+                  "customOutputs": [],
+                  "style": {
+                    "objID": "87c03f2a-2c9f-4f53-a430-3facd0018e14",
+                    "useStyle": "default",
+                    "conditionalStyles": [],
+                    "childStyles": []
+                  },
+                  "timeline": [],
+                  "eventHandlers": [
+                    {
+                      "objID": "040bd45d-89b4-4ad5-b34c-c3b36f370bcd",
+                      "eventName": "PRESSED",
+                      "handlerType": "action",
+                      "action": "toggle_forecast",
+                      "userData": 0
+                    }
+                  ],
+                  "identifier": "forecast_type_label",
+                  "leftUnit": "px",
+                  "topUnit": "px",
+                  "widthUnit": "px",
+                  "heightUnit": "px",
+                  "children": [],
+                  "widgetFlags": "CLICK_FOCUSABLE|GESTURE_BUBBLE|PRESS_LOCK|SCROLLABLE|SCROLL_CHAIN_HOR|SCROLL_CHAIN_VER|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_WITH_ARROW|SNAPPABLE",
+                  "hiddenFlagType": "literal",
+                  "clickableFlagType": "literal",
+                  "flagScrollbarMode": "",
+                  "flagScrollDirection": "",
+                  "scrollSnapX": "",
+                  "scrollSnapY": "",
+                  "checkedStateType": "literal",
+                  "disabledStateType": "literal",
+                  "states": "",
+                  "localStyles": {
+                    "objID": "10f94df2-2f08-47b2-bf64-f7d5b384e51b",
+                    "definition": {
+                      "MAIN": {
+                        "DEFAULT": {
+                          "text_color": "#e4ffff"
+                        }
+                      }
+                    }
+                  },
+                  "group": "",
+                  "groupIndex": 0,
+                  "text": "SEVEN DAY FORECAST",
+                  "textType": "literal",
+                  "longMode": "WRAP",
+                  "recolor": false
+                }
+              ],
               "widgetFlags": "CLICK_FOCUSABLE|GESTURE_BUBBLE|PRESS_LOCK|SCROLLABLE|SCROLL_CHAIN_HOR|SCROLL_CHAIN_VER|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_WITH_ARROW|SNAPPABLE",
+              "hiddenFlag": false,
               "hiddenFlagType": "literal",
               "clickableFlag": true,
               "clickableFlagType": "literal",
@@ -472,21 +561,7 @@
               "disabledStateType": "literal",
               "states": "",
               "localStyles": {
-                "objID": "87d5f921-637b-45d6-f9d8-0eeff6d5313c",
-                "definition": {
-                  "MAIN": {
-                    "DEFAULT": {
-                      "layout": "GRID",
-                      "bg_color": "#6f8fa8",
-                      "bg_opa": 255,
-                      "grid_template_columns": "50px 30px 60px 65px",
-                      "grid_template_rows": "25px 25px 25px 25px 25px 25px 25px",
-                      "bg_grad_dir": "NONE",
-                      "text_color": "#ffffff",
-                      "text_font": "MONTSERRAT_14"
-                    }
-                  }
-                }
+                "objID": "e97f5a00-4647-45a0-e19d-eb7f9d512045"
               },
               "group": "",
               "groupIndex": 0

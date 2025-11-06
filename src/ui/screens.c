@@ -78,32 +78,52 @@ void create_screen_main() {
             lv_label_set_text(obj, "12:24pm");
         }
         {
-            // forecast_type_label
-            lv_obj_t *obj = lv_label_create(parent_obj);
-            objects.forecast_type_label = obj;
-            lv_obj_set_pos(obj, 117, 8);
-            lv_obj_set_size(obj, 192, 16);
-            lv_obj_set_style_text_color(obj, lv_color_hex(0xffe4ffff), LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "SEVEN DAY FORECAST");
-        }
-        {
-            // temperature_grid
+            // toggle_forecast_container
             lv_obj_t *obj = lv_obj_create(parent_obj);
-            objects.temperature_grid = obj;
-            lv_obj_set_pos(obj, 104, 36);
-            lv_obj_set_size(obj, 205, 200);
+            objects.toggle_forecast_container = obj;
+            lv_obj_set_pos(obj, 104, 0);
+            lv_obj_set_size(obj, 216, 240);
             lv_obj_set_style_pad_left(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_pad_top(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_pad_right(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_pad_bottom(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_bg_opa(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_border_width(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_radius(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_layout(obj, LV_LAYOUT_GRID, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_color(obj, lv_color_hex(0xff6f8fa8), LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_opa(obj, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_grad_dir(obj, LV_GRAD_DIR_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_text_color(obj, lv_color_hex(0xffffffff), LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_text_font(obj, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_add_event_cb(obj, action_toggle_forecast, LV_EVENT_PRESSED, (void *)0);
+            {
+                lv_obj_t *parent_obj = obj;
+                {
+                    // temperature_grid
+                    lv_obj_t *obj = lv_obj_create(parent_obj);
+                    objects.temperature_grid = obj;
+                    lv_obj_set_pos(obj, 6, 36);
+                    lv_obj_set_size(obj, 205, 200);
+                    lv_obj_set_style_pad_left(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_pad_top(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_pad_right(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_pad_bottom(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_border_width(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_radius(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_add_event_cb(obj, action_toggle_forecast, LV_EVENT_PRESSED, (void *)0);
+                    lv_obj_set_style_layout(obj, LV_LAYOUT_GRID, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_bg_color(obj, lv_color_hex(0xff6f8fa8), LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_bg_opa(obj, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_bg_grad_dir(obj, LV_GRAD_DIR_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_text_color(obj, lv_color_hex(0xffffffff), LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_text_font(obj, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+                }
+                {
+                    // forecast_type_label
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    objects.forecast_type_label = obj;
+                    lv_obj_set_pos(obj, 7, 8);
+                    lv_obj_set_size(obj, 192, 16);
+                    lv_obj_add_event_cb(obj, action_toggle_forecast, LV_EVENT_PRESSED, (void *)0);
+                    lv_obj_set_style_text_color(obj, lv_color_hex(0xffe4ffff), LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_label_set_text(obj, "SEVEN DAY FORECAST");
+                }
+            }
         }
     }
     

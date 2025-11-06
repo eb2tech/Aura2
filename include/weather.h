@@ -58,4 +58,7 @@ LV_IMG_DECLARE(image_sunny);
 LV_IMG_DECLARE(image_tornado);
 LV_IMG_DECLARE(image_wintry_mix_rain_snow);
 
+extern bool display_seven_day_forecast;
+
 void update_weather(lv_timer_t *timer);
+void toggle_seven_day_forecast();

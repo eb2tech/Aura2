@@ -12,6 +12,8 @@
 static char latitude[16] = LATITUDE_DEFAULT;
 static char longitude[16] = LONGITUDE_DEFAULT;
 
+bool display_seven_day_forecast = true;
+
 const lv_img_dsc_t *choose_image(int code, int is_day)
 {
     switch (code)
@@ -266,13 +268,7 @@ void update_weather(lv_timer_t *timer)
 {
     auto strings = get_strings(LANG_EN);
 
-  String url = String("http://api.open-meteo.com/v1/forecast?latitude=")
-               + latitude + "&longitude=" + longitude
-               + "&current=temperature_2m,apparent_temperature,is_day,weather_code"
-               + "&daily=temperature_2m_min,temperature_2m_max,weather_code"
-               + "&hourly=temperature_2m,precipitation_probability,is_day,weather_code"
-               + "&forecast_hours=7"
-               + "&timezone=auto";
+    String url = String("http://api.open-meteo.com/v1/forecast?latitude=") + latitude + "&longitude=" + longitude + "&current=temperature_2m,apparent_temperature,is_day,weather_code" + "&daily=temperature_2m_min,temperature_2m_max,weather_code" + "&hourly=temperature_2m,precipitation_probability,is_day,weather_code" + "&forecast_hours=7" + "&timezone=auto";
 
     HTTPClient http;
     http.begin(url);
@@ -303,67 +299,76 @@ void update_weather(lv_timer_t *timer)
             lv_label_set_text_fmt(objects.feels_temperature_label, "%.0f°%c", t_ap, unit);
             lv_img_set_src(objects.current_conditions_image, choose_image(code_now, is_day));
 
-            JsonArray times = doc["daily"]["time"].as<JsonArray>();
-            JsonArray tmin = doc["daily"]["temperature_2m_min"].as<JsonArray>();
-            JsonArray tmax = doc["daily"]["temperature_2m_max"].as<JsonArray>();
-            JsonArray weather_codes = doc["daily"]["weather_code"].as<JsonArray>();
-
-            for (int i = 0; i < 7; i++)
+            Serial.println(String("Forecast display mode is ") + (display_seven_day_forecast ? "7-day" : "hourly"));
+            if (display_seven_day_forecast)
             {
-                const char *date = times[i];
-                int year = atoi(date + 0);
-                int mon = atoi(date + 5);
-                int dayd = atoi(date + 8);
-                int dow = day_of_week(year, mon, dayd);
-                const char *dayStr = (i == 0) ? strings->today : strings->weekdays[dow];
+                lv_label_set_text(objects.forecast_type_label, strings->seven_day_forecast);
 
-                float mn = tmin[i].as<float>();
-                float mx = tmax[i].as<float>();
-                if (use_fahrenheit)
+                JsonArray times = doc["daily"]["time"].as<JsonArray>();
+                JsonArray tmin = doc["daily"]["temperature_2m_min"].as<JsonArray>();
+                JsonArray tmax = doc["daily"]["temperature_2m_max"].as<JsonArray>();
+                JsonArray weather_codes = doc["daily"]["weather_code"].as<JsonArray>();
+
+                for (int i = 0; i < 7; i++)
                 {
-                    mn = mn * 9.0 / 5.0 + 32.0;
-                    mx = mx * 9.0 / 5.0 + 32.0;
+                    const char *date = times[i];
+                    int year = atoi(date + 0);
+                    int mon = atoi(date + 5);
+                    int dayd = atoi(date + 8);
+                    int dow = day_of_week(year, mon, dayd);
+                    const char *dayStr = (i == 0) ? strings->today : strings->weekdays[dow];
+
+                    float mn = tmin[i].as<float>();
+                    float mx = tmax[i].as<float>();
+                    if (use_fahrenheit)
+                    {
+                        mn = mn * 9.0 / 5.0 + 32.0;
+                        mx = mx * 9.0 / 5.0 + 32.0;
+                    }
+
+                    lv_label_set_text_fmt(forecast_datetime_label[i], "%s", dayStr);
+                    lv_label_set_text_fmt(forecast_temp_label[i], "%.0f°%c", mx, unit);
+                    lv_label_set_text_fmt(forecast_precip_low_label[i], "%.0f°%c", mn, unit);
+                    lv_img_set_src(forecast_visibility_image[i], choose_icon(weather_codes[i].as<int>(), (i == 0) ? is_day : 1));
                 }
-
-                lv_label_set_text_fmt(forecast_datetime_label[i], "%s", dayStr);
-                lv_label_set_text_fmt(forecast_temp_label[i], "%.0f°%c", mx, unit);
-                lv_label_set_text_fmt(forecast_precip_low_label[i], "%.0f°%c", mn, unit);
-                lv_img_set_src(forecast_visibility_image[i], choose_icon(weather_codes[i].as<int>(), (i == 0) ? is_day : 1));
             }
-/*
-            JsonArray hours = doc["hourly"]["time"].as<JsonArray>();
-            JsonArray hourly_temps = doc["hourly"]["temperature_2m"].as<JsonArray>();
-            JsonArray precipitation_probabilities = doc["hourly"]["precipitation_probability"].as<JsonArray>();
-            JsonArray hourly_weather_codes = doc["hourly"]["weather_code"].as<JsonArray>();
-            JsonArray hourly_is_day = doc["hourly"]["is_day"].as<JsonArray>();
-
-            for (int i = 0; i < 7; i++)
+            else
             {
-                const char *date = hours[i]; // "YYYY-MM-DD"
-                int hour = atoi(date + 11);
-                int minute = atoi(date + 14);
-                String hour_name = hour_of_day(hour);
+                lv_label_set_text(objects.forecast_type_label, strings->hourly_forecast);
 
-                float precipitation_probability = precipitation_probabilities[i].as<float>();
-                float temp = hourly_temps[i].as<float>();
-                if (use_fahrenheit)
-                {
-                    temp = temp * 9.0 / 5.0 + 32.0;
-                }
+                JsonArray hours = doc["hourly"]["time"].as<JsonArray>();
+                JsonArray hourly_temps = doc["hourly"]["temperature_2m"].as<JsonArray>();
+                JsonArray precipitation_probabilities = doc["hourly"]["precipitation_probability"].as<JsonArray>();
+                JsonArray hourly_weather_codes = doc["hourly"]["weather_code"].as<JsonArray>();
+                JsonArray hourly_is_day = doc["hourly"]["is_day"].as<JsonArray>();
 
-                if (i == 0)
+                for (int i = 0; i < 7; i++)
                 {
-                    lv_label_set_text(forecast_datetime_label[i], strings->now);
+                    const char *date = hours[i]; // "YYYY-MM-DD"
+                    int hour = atoi(date + 11);
+                    int minute = atoi(date + 14);
+                    String hour_name = hour_of_day(hour);
+
+                    float precipitation_probability = precipitation_probabilities[i].as<float>();
+                    float temp = hourly_temps[i].as<float>();
+                    if (use_fahrenheit)
+                    {
+                        temp = temp * 9.0 / 5.0 + 32.0;
+                    }
+
+                    if (i == 0)
+                    {
+                        lv_label_set_text(forecast_datetime_label[i], strings->now);
+                    }
+                    else
+                    {
+                        lv_label_set_text(forecast_datetime_label[i], hour_name.c_str());
+                    }
+                    lv_label_set_text_fmt(forecast_temp_label[i], "%.0f°%c", temp, unit);
+                    lv_label_set_text_fmt(forecast_precip_low_label[i], "%.0f%%", precipitation_probability);
+                    lv_img_set_src(forecast_visibility_image[i], choose_icon(hourly_weather_codes[i].as<int>(), hourly_is_day[i].as<int>()));
                 }
-                else
-                {
-                    lv_label_set_text(forecast_datetime_label[i], hour_name.c_str());
-                }
-                lv_label_set_text_fmt(forecast_precip_low_label[i], "%.0f%%", precipitation_probability);
-                // lv_label_set_text_fmt(forecast_precip_low_label[i], "%.0f°%c", temp, unit);
-                lv_img_set_src(forecast_visibility_image[i], choose_icon(hourly_weather_codes[i].as<int>(), hourly_is_day[i].as<int>()));
             }
-*/            
         }
         else
         {
@@ -375,4 +380,13 @@ void update_weather(lv_timer_t *timer)
         Serial.println("HTTP GET failed at " + url);
     }
     http.end();
+}
+
+void toggle_seven_day_forecast()
+{
+    display_seven_day_forecast = !display_seven_day_forecast;
+    preferences.putBool("display_7day", display_seven_day_forecast);
+
+    Serial.println(String("Toggled forecast display mode to ") + (display_seven_day_forecast ? "7-day" : "hourly"));
+    update_weather(nullptr);
 }
