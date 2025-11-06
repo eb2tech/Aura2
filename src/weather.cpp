@@ -282,7 +282,7 @@ void update_weather(lv_timer_t *timer)
         Serial.println("Updated weather from open-meteo: " + url);
 
         String payload = http.getString();
-        DynamicJsonDocument doc(32 * 1024);
+        JsonDocument doc;
 
         if (deserializeJson(doc, payload) == DeserializationError::Ok)
         {
