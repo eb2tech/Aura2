@@ -299,7 +299,6 @@ void update_weather(lv_timer_t *timer)
             lv_label_set_text_fmt(objects.feels_temperature_label, "%.0f°%c", t_ap, unit);
             lv_img_set_src(objects.current_conditions_image, choose_image(code_now, is_day));
 
-            Serial.println(String("Forecast display mode is ") + (display_seven_day_forecast ? "7-day" : "hourly"));
             if (display_seven_day_forecast)
             {
                 lv_label_set_text(objects.forecast_type_label, strings->seven_day_forecast);
@@ -387,6 +386,5 @@ void toggle_seven_day_forecast()
     display_seven_day_forecast = !display_seven_day_forecast;
     preferences.putBool("display_7day", display_seven_day_forecast);
 
-    Serial.println(String("Toggled forecast display mode to ") + (display_seven_day_forecast ? "7-day" : "hourly"));
     update_weather(nullptr);
 }
