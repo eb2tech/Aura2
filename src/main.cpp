@@ -135,36 +135,33 @@ void setup_ui()
     // Create date/time label
     int col = 0;
     forecast_datetime_label[row] = lv_label_create(objects.temperature_grid);
-    auto date = "Day " + String(row + 1);
-    lv_label_set_text(forecast_datetime_label[row], date.c_str());
     lv_obj_set_style_text_align(forecast_datetime_label[row], LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_grid_cell(forecast_datetime_label[row], LV_GRID_ALIGN_CENTER, col, 1, LV_GRID_ALIGN_CENTER, row, 1);
 
     // Create visibility image
     ++col;
     forecast_visibility_image[row] = lv_img_create(objects.temperature_grid);
-    lv_img_set_src(forecast_visibility_image[row], &icon_partly_cloudy);
     lv_obj_set_grid_cell(forecast_visibility_image[row], LV_GRID_ALIGN_CENTER, col, 1, LV_GRID_ALIGN_CENTER, row, 1);
 
-    // Create precipitation low label
+    // Create precipitation/low label
     ++col;
     forecast_precip_low_label[row] = lv_label_create(objects.temperature_grid);
-    lv_label_set_text(forecast_precip_low_label[row], "10%");
     lv_obj_set_style_text_align(forecast_precip_low_label[row], LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_color(forecast_precip_low_label[row], lv_color_hex(0xb9ecff), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_grid_cell(forecast_precip_low_label[row], LV_GRID_ALIGN_CENTER, col, 1, LV_GRID_ALIGN_CENTER, row, 1);
 
     // Create temperature label
     ++col;
     forecast_temp_label[row] = lv_label_create(objects.temperature_grid);
-    lv_label_set_text(forecast_temp_label[row], "99°F");
     lv_obj_set_style_text_align(forecast_temp_label[row], LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_grid_cell(forecast_temp_label[row], LV_GRID_ALIGN_CENTER, col, 1, LV_GRID_ALIGN_CENTER, row, 1);
   }
 
-  lv_timer_create(update_clock, 30*1000, NULL); // Update clock every 30 seconds
-  lv_timer_create(update_weather, 10*60*1000, NULL); // Update weather every 10 minutes
+  auto clock_timer = lv_timer_create(update_clock, 30*1000, NULL); // Update clock every 30 seconds
+  auto weather_timer = lv_timer_create(update_weather, 10*60*1000, NULL); // Update weather every 10 minutes
 
-  update_weather(NULL); // Initial weather update
+  lv_timer_ready(clock_timer);   // Initial clock update
+  lv_timer_ready(weather_timer); // Initial weather update
 }
 
 void setup_clock()
