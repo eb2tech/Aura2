@@ -70,12 +70,12 @@ void create_screen_main() {
             // current_time_label
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.current_time_label = obj;
-            lv_obj_set_pos(obj, 8, 203);
-            lv_obj_set_size(obj, 85, 28);
+            lv_obj_set_pos(obj, 13, 200);
+            lv_obj_set_size(obj, 87, 28);
             lv_obj_set_style_text_color(obj, lv_color_hex(0xff14536a), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_font(obj, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "12:24pm");
+            lv_label_set_text(obj, "10:00pm");
         }
         {
             // toggle_forecast_container

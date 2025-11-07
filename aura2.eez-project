@@ -347,9 +347,9 @@
             {
               "objID": "7f7a3b32-e3a5-4f3e-800c-a6b2fcbe3426",
               "type": "LVGLLabelWidget",
-              "left": 8,
-              "top": 203,
-              "width": 85,
+              "left": 13,
+              "top": 200,
+              "width": 87,
               "height": 28,
               "customInputs": [],
               "customOutputs": [],
@@ -391,7 +391,7 @@
               },
               "group": "",
               "groupIndex": 0,
-              "text": "12:24pm",
+              "text": "10:00pm",
               "textType": "literal",
               "longMode": "WRAP",
               "recolor": false

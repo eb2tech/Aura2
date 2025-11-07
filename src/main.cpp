@@ -159,7 +159,7 @@ void setup_ui()
     lv_obj_set_grid_cell(forecast_temp_label[row], LV_GRID_ALIGN_CENTER, col, 1, LV_GRID_ALIGN_CENTER, row, 1);
   }
 
-  auto clock_timer = lv_timer_create(update_clock, 30*1000, NULL); // Update clock every 30 seconds
+  auto clock_timer = lv_timer_create(update_clock, 10*1000, NULL); // Update clock every 10 seconds
   auto weather_timer = lv_timer_create(update_weather, 10*60*1000, NULL); // Update weather every 10 minutes
 
   lv_timer_ready(clock_timer);   // Initial clock update
