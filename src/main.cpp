@@ -6,6 +6,7 @@
 #include <XPT2046_Touchscreen.h>
 #include <Preferences.h>
 #include <WiFiManager.h>
+#include <ESPmDNS.h>
 #include "ui/ui.h"
 #include "weather.h"
 #include "forecast_widgets.h"
@@ -233,6 +234,19 @@ void setup_clock()
   update_clock(NULL); // Initial clock update
 }
 
+void setup_mdns() {
+  Serial.println("Setting up mDNS responder...");
+  while (!MDNS.begin(getDeviceIdentifier().c_str())) {
+    Serial.println("Error setting up MDNS responder...");
+    delay(1000);
+  }
+  Serial.println("mDNS responder started");
+
+  MDNS.setInstanceName("Aura2 Weather Display");
+  MDNS.addService("http", "tcp", 80);
+  MDNS.enableArduino();
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -280,6 +294,7 @@ void setup()
 
   // Set up everything else
   setup_wifi();
+  setup_mdns();
   setup_ui();
   setup_clock();
 
