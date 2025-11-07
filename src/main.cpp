@@ -5,8 +5,8 @@
 #include <TFT_eSPI.h>
 #include <XPT2046_Touchscreen.h>
 #include <Preferences.h>
+#include <WiFiManager.h>
 #include "ui/ui.h"
-#include "secrets.h"
 #include "weather.h"
 #include "forecast_widgets.h"
 
@@ -28,17 +28,27 @@ lv_obj_t *forecast_visibility_image[7];
 lv_obj_t *forecast_precip_low_label[7];
 lv_obj_t *forecast_temp_label[7];
 
-// WiFi credentials
-const char *ssid = WIFI_SSID;
-const char *password = WIFI_PASSWORD;
-
-WiFiClient espClient;
-
 TFT_eSPI tft = TFT_eSPI();
 SPIClass touchscreenSpi = SPIClass(VSPI);
 XPT2046_Touchscreen touchscreen(XPT2046_CS, XPT2046_IRQ);
 uint16_t touchScreenMinimumX = 200, touchScreenMaximumX = 3700, touchScreenMinimumY = 240, touchScreenMaximumY = 3800;
 Preferences preferences;
+
+uint64_t getChipId()
+{
+  return ESP.getEfuseMac();
+}
+
+String getChipIdString()
+{
+  uint64_t chipid = ESP.getEfuseMac();
+  return String((uint32_t)(chipid >> 32), HEX) + String((uint32_t)chipid, HEX);
+}
+
+String getDeviceIdentifier()
+{
+  return "Aura2-" + getChipIdString();
+}
 
 void update_clock(lv_timer_t *timer)
 {
@@ -106,16 +116,44 @@ void touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
   }
 }
 
+WiFiManager wifiManager;
+bool shouldSaveConfig = false;
+String mqttServer = "";
+String mqttPassword = "";
+
+void saveConfigCallback()
+{
+  Serial.println("Should save config");
+  shouldSaveConfig = true;
+}
+
 void setup_wifi()
 {
-  delay(10);
-  WiFi.begin(ssid, password);
   Serial.println("Connecting to WiFi...");
-  while (WiFi.status() != WL_CONNECTED)
+
+  WiFiManagerParameter custom_mqtt_server("mqtt_server", "MQTT Server", mqttServer.c_str(), 40);
+  WiFiManagerParameter custom_mqtt_password("mqtt_password", "MQTT Password", mqttPassword.c_str(), 40);
+
+  wifiManager.addParameter(&custom_mqtt_server);
+  wifiManager.addParameter(&custom_mqtt_password);
+
+  wifiManager.setSaveConfigCallback(saveConfigCallback);
+  wifiManager.autoConnect(getDeviceIdentifier().c_str());
+
+  if (shouldSaveConfig)
   {
-    delay(1000);
-    Serial.println("  Connecting...");
+    mqttServer = String(custom_mqtt_server.getValue());
+    mqttPassword = String(custom_mqtt_password.getValue());
+
+    Serial.println("Saving config:");
+    Serial.println("MQTT Server: " + mqttServer);
+    Serial.println("MQTT Password: " + mqttPassword);
+
+    // Save to preferences
+    preferences.putString("mqtt_server", mqttServer);
+    preferences.putString("mqtt_password", mqttPassword);
   }
+
   Serial.println("Connected to WiFi: " + WiFi.localIP().toString());
 }
 
@@ -219,6 +257,8 @@ void setup()
   // Load saved preferences
   preferences.begin("aura2", false);
   display_seven_day_forecast = preferences.getBool("display_7day", true);
+  mqttServer = preferences.getString("mqtt_server", "");
+  mqttPassword = preferences.getString("mqtt_password", "");
 
   // Initialize LVGL
   lv_init();
