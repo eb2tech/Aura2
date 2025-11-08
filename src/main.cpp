@@ -1,12 +1,16 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <ArduinoJson.h>
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 #include <XPT2046_Touchscreen.h>
 #include <Preferences.h>
 #include <WiFiManager.h>
 #include <ESPmDNS.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <LittleFS.h>
 #include "ui/ui.h"
 #include "weather.h"
 #include "forecast_widgets.h"
@@ -51,7 +55,7 @@ String getDeviceIdentifier()
   return "Aura2-" + getChipIdString();
 }
 
-void update_clock(lv_timer_t *timer)
+void updateClock(lv_timer_t *timer)
 {
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) return;
@@ -66,7 +70,7 @@ void update_clock(lv_timer_t *timer)
 }
 
 // LVGL log callback
-void log_print(lv_log_level_t level, const char *buf)
+void logPrint(lv_log_level_t level, const char *buf)
 {
   LV_UNUSED(level);
   Serial.println(buf);
@@ -74,7 +78,7 @@ void log_print(lv_log_level_t level, const char *buf)
 }
 
 // Display flushing callback - TFT_eSPI implementation
-void disp_flush(lv_display_t *display, const lv_area_t *area, uint8_t *color_p)
+void displayFlush(lv_display_t *display, const lv_area_t *area, uint8_t *color_p)
 {
   uint32_t w = (area->x2 - area->x1 + 1);
   uint32_t h = (area->y2 - area->y1 + 1);
@@ -87,7 +91,7 @@ void disp_flush(lv_display_t *display, const lv_area_t *area, uint8_t *color_p)
   lv_display_flush_ready(display); // Tell LVGL you are ready with the flushing
 }
 
-void touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
+void touchpadRead(lv_indev_t *indev, lv_indev_data_t *data)
 {
   if (touchscreen.touched())
   {
@@ -121,6 +125,7 @@ WiFiManager wifiManager;
 bool shouldSaveConfig = false;
 String mqttServer = "";
 String mqttPassword = "";
+uint32_t brightness = 255;
 
 void saveConfigCallback()
 {
@@ -128,7 +133,7 @@ void saveConfigCallback()
   shouldSaveConfig = true;
 }
 
-void setup_wifi()
+void setupWifi()
 {
   Serial.println("Connecting to WiFi...");
 
@@ -158,7 +163,7 @@ void setup_wifi()
   Serial.println("Connected to WiFi: " + WiFi.localIP().toString());
 }
 
-void setup_ui()
+void setupUi()
 {
   // Initialize EEZ Studio generated UI
   ui_init();
@@ -170,7 +175,7 @@ void setup_ui()
   lv_obj_set_style_grid_row_dsc_array(objects.temperature_grid, row_heights, 0);
   lv_obj_set_layout(objects.temperature_grid, LV_LAYOUT_GRID);
 
-  // Set up the 7-day forecast grid
+  // Set up the 7-day/7-hour forecast grid
   for (int row = 0; row < 7; row++)
   {
     // Create date/time label
@@ -198,14 +203,14 @@ void setup_ui()
     lv_obj_set_grid_cell(forecast_temp_label[row], LV_GRID_ALIGN_CENTER, col, 1, LV_GRID_ALIGN_CENTER, row, 1);
   }
 
-  auto clock_timer = lv_timer_create(update_clock, 10*1000, NULL); // Update clock every 10 seconds
+  auto clock_timer = lv_timer_create(updateClock, 10*1000, NULL); // Update clock every 10 seconds
   auto weather_timer = lv_timer_create(update_weather, 10*60*1000, NULL); // Update weather every 10 minutes
 
   lv_timer_ready(clock_timer);   // Initial clock update
   lv_timer_ready(weather_timer); // Initial weather update
 }
 
-void setup_clock()
+void setupClock()
 {
   // Initialize NTP time synchronization
   configTime(0, 0, "pool.ntp.org", "time.nist.gov");
@@ -231,10 +236,10 @@ void setup_clock()
     Serial.println("Failed to synchronize time after retries");
   }
 
-  update_clock(NULL); // Initial clock update
+  updateClock(NULL); // Initial clock update
 }
 
-void setup_mdns() {
+void setupMdns() {
   Serial.println("Setting up mDNS responder...");
   while (!MDNS.begin(getDeviceIdentifier().c_str())) {
     Serial.println("Error setting up MDNS responder...");
@@ -242,9 +247,85 @@ void setup_mdns() {
   }
   Serial.println("mDNS responder started");
 
-  MDNS.setInstanceName("Aura2 Weather Display");
+  // MDNS.setInstanceName("Aura2 Weather Display");
   MDNS.addService("http", "tcp", 80);
   MDNS.enableArduino();
+}
+
+AsyncWebServer server(80);
+
+String templateProcessor(const String &var)
+{
+  if (var == "BRIGHTNESS_VALUE")
+  {
+    return String(brightness);
+  }
+  return String();
+};
+
+void setupWebserver()
+{
+  Serial.println("Setting up web server...");
+
+  if (!LittleFS.begin(false))
+  {
+    Serial.println("LittleFS mount failed!");
+    return;
+  }
+  else
+  {
+    Serial.println("LittleFS mounted successfully");
+    Serial.printf("Total: %d bytes, Used: %d bytes\n", LittleFS.totalBytes(), LittleFS.usedBytes());
+  }
+
+  // Verify required files exist
+  if (!LittleFS.exists("/index.html"))
+  {
+    Serial.println("WARNING: /index.html not found");
+  }
+
+  // Static files (index.html, etc.)
+  server.serveStatic("/", LittleFS, "/");
+
+  // Serve templated HTML with current brightness value
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+    if (LittleFS.exists("/index.html")) {
+      
+      request->send(LittleFS, "/index.html", "text/html", false, &templateProcessor);
+    } else {
+      request->send(404, "text/plain", "index.html not found");
+    } });
+
+  // Handle brightness updates with POST
+  server.on("/setBrightness", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
+      JsonDocument doc;
+      DeserializationError error = deserializeJson(doc, (const char*)data);
+      
+      if (error) {
+        Serial.print("JSON parse error: ");
+        Serial.println(error.c_str());
+        request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+        return;
+      }
+      
+      int brightnessValue = doc["value"];
+      brightnessValue = constrain(brightnessValue, 0, 255);
+      
+      Serial.printf("Setting brightness to: %d\n", brightnessValue);
+      
+      // Apply brightness to LCD backlight
+      analogWrite(LCD_BACKLIGHT_PIN, brightnessValue);
+      
+      // Save to preferences for persistence
+      preferences.putUInt("brightness", brightnessValue);
+      brightness = brightnessValue;
+      
+      request->send(200, "application/json", "{\"status\":\"ok\"}"); });
+
+  server.begin();
+  Serial.println("Web server started on port 80");
 }
 
 void setup()
@@ -273,10 +354,11 @@ void setup()
   display_seven_day_forecast = preferences.getBool("display_7day", true);
   mqttServer = preferences.getString("mqtt_server", "");
   mqttPassword = preferences.getString("mqtt_password", "");
+  brightness = preferences.getUInt("brightness", 255);
 
   // Initialize LVGL
   lv_init();
-  lv_log_register_print_cb(log_print);
+  lv_log_register_print_cb(logPrint);
 
   // Create display (LVGL 9.x API)
   lv_display_t *display = lv_display_create(screenWidth, screenHeight);
@@ -285,18 +367,19 @@ void setup()
   lv_display_set_buffers(display, buf1, NULL, sizeof(buf1), LV_DISPLAY_RENDER_MODE_PARTIAL);
 
   // Set display flush callback
-  lv_display_set_flush_cb(display, disp_flush);
+  lv_display_set_flush_cb(display, displayFlush);
 
   // Set up touch input device
   lv_indev_t *indev_touchpad = lv_indev_create();
   lv_indev_set_type(indev_touchpad, LV_INDEV_TYPE_POINTER);
-  lv_indev_set_read_cb(indev_touchpad, touchpad_read);
+  lv_indev_set_read_cb(indev_touchpad, touchpadRead);
 
   // Set up everything else
-  setup_wifi();
-  setup_mdns();
-  setup_ui();
-  setup_clock();
+  setupWifi();
+  setupMdns();
+  setupUi();
+  setupClock();
+  setupWebserver();
 
   Serial.println("UI initialized and ready!");
 
