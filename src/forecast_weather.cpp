@@ -2,7 +2,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include "text_strings.h"
-#include "weather.h"
+#include "forecast_weather.h"
 #include "forecast_widgets.h"
 #include "forecast_preferences.h"
 #include "ui/ui.h"

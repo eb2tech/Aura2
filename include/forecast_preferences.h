@@ -13,4 +13,6 @@ extern float weather_longitude;
 extern String weather_city;
 extern String weather_region;
 extern bool show_24hour_clock;
-
+extern bool dim_at_night;
+extern String dim_start_time;  
+extern String dim_end_time;
