@@ -2,8 +2,7 @@
 
 The Aura2 project is a landscape layout weather widget inspired by the [Aura project](https://github.com/Surrey-Homeware/Aura).
 
-That version used the Arduino IDE, which is OK for smaller projects but I'm more accustomed to IDEs like Visual Studio and Jetbrains Rider.
-Neither of them support use with controllers like ESP32. Visual Studio Code with PlatformIO does.
+While the Aura project used the Arduino IDE, the Aura2 project uses Visual Studio Code with PlatformIO.
 
 The project also uses LVGL to render the UI. The original version uses a lot of C that manually creates and places widgets. This project uses
 EEZ Studio to visually layout the UI as much as possible.
