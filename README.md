@@ -38,3 +38,4 @@ I'd like to extend the thanks given to all of the work that predates this projec
 * [EEZ Studio](https://www.envox.eu/studio/studio-introduction/)
 * [Random Nerd Tutorials](https://randomnerdtutorials.com/)
 * [Aura's Thanks and Credits](https://github.com/Surrey-Homeware/Aura?tab=readme-ov-file#thanks--credits)
+* [Tabler Icons](https://tabler.io/icons)
