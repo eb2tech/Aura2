@@ -68,6 +68,78 @@ String getDeviceIdentifier()
   return "Aura2-" + getChipIdString();
 }
 
+void showWiFiSplashScreen()
+{
+  // Clear screen with black background
+  tft.fillScreen(TFT_BLACK);
+  
+  // Set text properties
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextWrap(true);
+  tft.setTextSize(1);
+  
+  // Title
+  tft.setTextSize(2);
+  tft.setCursor(30, 20);
+  tft.println("Aura2 Setup");
+  
+  // Device ID
+  tft.setTextSize(1);
+  tft.setCursor(10, 55);
+  tft.setTextColor(TFT_CYAN, TFT_BLACK);
+  tft.println("Device: " + getDeviceIdentifier());
+  
+  // Main instructions
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setCursor(10, 80);
+  tft.println("WiFi configuration needed:");
+  
+  tft.setCursor(10, 100);
+  tft.println("1. Connect phone/laptop to:");
+  
+  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+  tft.setCursor(20, 115);
+  tft.println("   \"" + getDeviceIdentifier() + "\"");
+  
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setCursor(10, 135);
+  tft.println("2. Open web browser");
+  
+  tft.setCursor(10, 150);
+  tft.println("3. Go to: ");
+  tft.setTextColor(TFT_CYAN, TFT_BLACK);
+  tft.print("192.168.4.1");
+  
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setCursor(10, 170);
+  tft.println("4. Select your WiFi network");
+  
+  tft.setCursor(10, 185);
+  tft.println("5. Enter password");
+  
+  // Status at bottom
+  tft.setTextColor(TFT_GREEN, TFT_BLACK);
+  tft.setCursor(10, 210);
+  tft.println("Starting WiFi hotspot...");
+  
+  // Force display update
+  delay(100);
+}
+
+void updateWiFiSplashStatus(const String& status, uint16_t color = TFT_GREEN)
+{
+  // Clear status area
+  tft.fillRect(10, 210, 300, 20, TFT_BLACK);
+  
+  // Update status
+  tft.setTextColor(color, TFT_BLACK);
+  tft.setTextSize(1);
+  tft.setCursor(10, 210);
+  tft.println(status);
+  
+  delay(100);
+}
+
 void updateClock(lv_timer_t *timer)
 {
   struct tm timeinfo;
@@ -153,9 +225,31 @@ void saveConfigCallback()
   shouldSaveConfig = true;
 }
 
+// WiFiManager callback functions for splash screen updates
+void onWiFiManagerAPStarted(WiFiManager* wifiManager) {
+  updateWiFiSplashStatus("Hotspot ready! Connect now", TFT_YELLOW);
+  Serial.println("AP Mode started");
+}
+
+void onWiFiManagerConnected() {
+  updateWiFiSplashStatus("WiFi connected! Loading...", TFT_GREEN);
+  Serial.println("WiFi connected via WiFiManager");
+}
+
 void setupWifi()
 {
   Serial.println("Connecting to WiFi...");
+  
+  // Check if already connected
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("Already connected to WiFi");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    return;
+  }
+  
+  // Show splash screen for configuration
+  showWiFiSplashScreen();
 
   WiFiManagerParameter custom_mqtt_server("mqtt_server", "MQTT Server", mqttServer.c_str(), 40);
   WiFiManagerParameter custom_mqtt_password("mqtt_password", "MQTT Password", mqttPassword.c_str(), 40);
@@ -163,8 +257,31 @@ void setupWifi()
   wifiManager.addParameter(&custom_mqtt_server);
   wifiManager.addParameter(&custom_mqtt_password);
 
+  // Set callbacks
   wifiManager.setSaveConfigCallback(saveConfigCallback);
-  wifiManager.autoConnect(getDeviceIdentifier().c_str());
+  wifiManager.setAPCallback(onWiFiManagerAPStarted);
+  
+  // Set timeout for captive portal (5 minutes)
+  wifiManager.setConfigPortalTimeout(300);
+  
+  // Update status before starting
+  updateWiFiSplashStatus("Checking saved WiFi...", TFT_CYAN);
+  
+  // Try to connect, if it fails start captive portal
+  if (!wifiManager.autoConnect(getDeviceIdentifier().c_str())) {
+    updateWiFiSplashStatus("WiFi setup timeout!", TFT_RED);
+    Serial.println("Failed to connect and hit timeout");
+    delay(3000);
+    // Reset and try again
+    ESP.restart();
+  } else {
+    // Connected successfully
+    updateWiFiSplashStatus("WiFi connected successfully!", TFT_GREEN);
+    Serial.println("WiFi connected");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    delay(2000); // Show success message briefly
+  }
 
   if (shouldSaveConfig)
   {
@@ -340,12 +457,12 @@ void setup()
   setupClock();
   setupWebserver();
 
-  Serial.println("UI initialized and ready!");
+  Serial.println("UI initialized and ready");
 
   // Force initial screen refresh
   lv_refr_now(display);
 
-  Serial.println("Setup complete!");
+  Serial.println("Setup complete");
 }
 
 void loop()

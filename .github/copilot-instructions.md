@@ -207,6 +207,7 @@ The TFT_eSPI configuration defines these pin connections:
 - Use descriptive function names
 - Comment complex LVGL UI creation code
 - Keep string literals in LocalizedStrings structures
+- **Serial Debug Messages**: Use calm, professional tone for Serial.println() statements. Avoid excessive exclamation points. Prefer "WiFi connected" over "WiFi connected!" and "Setup complete" over "Setup complete!"
 
 ### Memory Management
 - ESP32 has limited RAM - be careful with large images/fonts

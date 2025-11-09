@@ -61,11 +61,11 @@ String templateProcessor(const String &var)
 
 void setupWebserver()
 {
-    Serial.println("Setting up web server...");
+    Serial.println("Setting up settings web server...");
 
     if (!LittleFS.begin(false))
     {
-        Serial.println("LittleFS mount failed!");
+        Serial.println("LittleFS mount failed");
         return;
     }
     else
