@@ -4,15 +4,8 @@
 #include "text_strings.h"
 #include "weather.h"
 #include "forecast_widgets.h"
+#include "forecast_preferences.h"
 #include "ui/ui.h"
-
-#define LATITUDE_DEFAULT "29.7604"
-#define LONGITUDE_DEFAULT "-95.3698"
-
-static char latitude[16] = LATITUDE_DEFAULT;
-static char longitude[16] = LONGITUDE_DEFAULT;
-
-bool display_seven_day_forecast = true;
 
 const lv_img_dsc_t *choose_image(int code, int is_day)
 {
@@ -267,6 +260,8 @@ String hour_of_day(int hour)
 void update_weather(lv_timer_t *timer)
 {
     auto strings = get_strings(LANG_EN);
+    auto latitude = String(weather_latitude);
+    auto longitude = String(weather_longitude);
 
     String url = String("http://api.open-meteo.com/v1/forecast?latitude=") + latitude + "&longitude=" + longitude + "&current=temperature_2m,apparent_temperature,is_day,weather_code" + "&daily=temperature_2m_min,temperature_2m_max,weather_code" + "&hourly=temperature_2m,precipitation_probability,is_day,weather_code" + "&forecast_hours=7" + "&timezone=auto";
 
@@ -287,7 +282,6 @@ void update_weather(lv_timer_t *timer)
             int code_now = doc["current"]["weather_code"].as<int>();
             int is_day = doc["current"]["is_day"].as<int>();
 
-            const bool use_fahrenheit = true;
             if (use_fahrenheit)
             {
                 t_now = t_now * 9.0 / 5.0 + 32.0;
