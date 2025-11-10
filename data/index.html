@@ -50,14 +50,14 @@
         %TEMP_F_CHECKED%
       />
     </div>
-    <div id="dimAtNightSettings">
-      <div id="dimAtNightSetting">
+    <div id="dimAtTimeSettings">
+      <div id="dimAtTimeSetting">
         Dim at night:
         <input
           type="checkbox"
-          id="dimAtNight"
-          onchange="updateDimAtNight(this.checked)"
-          %DIM_AT_NIGHT_CHECKED%
+          id="dimAtTime"
+          onchange="updateDimAtTime(this.checked)"
+          %DIM_AT_TIME_CHECKED%
         />
       </div>
       <div style="margin-left: 20px">
@@ -143,8 +143,8 @@
         });
       }
 
-      function updateDimAtNight(isEnabled) {
-        fetch("/setDimAtNight", {
+      function updateDimAtTime(isEnabled) {
+        fetch("/setDimAtTime", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

@@ -26,7 +26,7 @@ String getWeatherCity() { return weather_city; }
 String getWeatherRegion() { return weather_region; }
 String getShow24HourClock() { return show_24hour_clock ? "checked" : ""; }
 String getUseFahrenheit() { return use_fahrenheit ? "checked" : ""; }
-String getDimAtNight() { return dim_at_night ? "checked" : ""; }
+String getDimAtTime() { return dim_at_time ? "checked" : ""; }
 String getDimStartTime() { return dim_start_time; }
 String getDimEndTime() { return dim_end_time; }
 
@@ -39,7 +39,7 @@ static const TemplateEntry templateTable[] = {
     {"WEATHER_REGION", getWeatherRegion},
     {"CLOCK_24H_CHECKED", getShow24HourClock},
     {"TEMP_F_CHECKED", getUseFahrenheit},
-    {"DIM_AT_NIGHT_CHECKED", getDimAtNight},
+    {"DIM_AT_TIME_CHECKED", getDimAtTime},
     {"DIM_START_TIME", getDimStartTime},
     {"DIM_END_TIME", getDimEndTime},
     {nullptr, nullptr} // Sentinel
@@ -154,7 +154,7 @@ void setupWebserver()
       preferences.putFloat("weather_lat", lat);
       preferences.putFloat("weather_lon", lon);
       
-      update_weather(nullptr);
+      updateWeather(nullptr);
       
       request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
@@ -214,12 +214,12 @@ void setupWebserver()
     preferences.putBool("use_fahrenheit", useF);
     
     // Trigger weather update to refresh temperature display
-    update_weather(nullptr);
+    updateWeather(nullptr);
     
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
-    // Handle dim at night setting with POST
-    server.on("/setDimAtNight", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+    // Handle dim at time setting with POST
+    server.on("/setDimAtTime", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
               {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, (const char*)data);
@@ -238,10 +238,11 @@ void setupWebserver()
     
     bool enabled = doc["enabled"];
     
-    Serial.printf("Setting dim at night to: %s\n", enabled ? "enabled" : "disabled");
+    Serial.printf("Setting dim at time to: %s\n", enabled ? "enabled" : "disabled");
     
-    dim_at_night = enabled;
-    preferences.putBool("dim_at_night", enabled);
+    dim_at_time = enabled;
+    preferences.putBool("dim_at_time", enabled);
+    checkDimTime(nullptr);
     
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
@@ -275,6 +276,7 @@ void setupWebserver()
     
     dim_start_time = startTime;
     preferences.putString("dim_start_time", startTime);
+    checkDimTime(nullptr);
     
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
@@ -348,7 +350,7 @@ void setupWebserver()
           preferences.putString("weather_region", region);
           
           // Trigger weather update with new location
-          update_weather(nullptr);
+          updateWeather(nullptr);
           
           // Return success with location data
           JsonDocument response;

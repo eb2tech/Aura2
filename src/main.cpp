@@ -48,9 +48,10 @@ float weather_longitude = -95.3698;
 String weather_city = "Houston";
 String weather_region = "TX";
 bool show_24hour_clock = false;
-bool dim_at_night = false;
+bool dim_at_time = false;
 String dim_start_time = "22:00";
 String dim_end_time = "06:00";
+bool dimModeActive = false;
 
 uint64_t getChipId()
 {
@@ -68,75 +69,129 @@ String getDeviceIdentifier()
   return "Aura2-" + getChipIdString();
 }
 
+bool itsDimTime()
+{
+  if (!dim_at_time)
+    return false;
+
+  auto timeToMinutes = [](const String &timeStr)
+  {
+    int hour = timeStr.substring(0, 2).toInt();
+    int minute = timeStr.substring(3, 5).toInt();
+    return hour * 60 + minute;
+  };
+
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo))
+    return false;
+
+  int currentMinutes = timeinfo.tm_hour * 60 + timeinfo.tm_min;
+  int startMinutes = timeToMinutes(dim_start_time);
+  int endMinutes = timeToMinutes(dim_end_time);
+
+  if (startMinutes < endMinutes)
+  {
+    return (currentMinutes >= startMinutes) && (currentMinutes < endMinutes);
+  }
+  else
+  {
+    return (currentMinutes >= startMinutes) || (currentMinutes < endMinutes);
+  }
+}
+
+void checkDimTime(lv_timer_t *timer)
+{
+  auto goDim = []()
+  {
+    analogWrite(LCD_BACKLIGHT_PIN, 0);
+    dimModeActive = true;
+  };
+  auto restoreBrightness = [=]()
+  {
+    analogWrite(LCD_BACKLIGHT_PIN, brightness);
+    dimModeActive = false;
+  };
+
+  bool dimTime = itsDimTime();
+  if (dimTime && !dimModeActive)
+  {
+    goDim();
+  }
+  else if (!dimTime && dimModeActive)
+  {
+    restoreBrightness();
+  }
+}
+
 void showWiFiSplashScreen()
 {
   // Clear screen with black background
   tft.fillScreen(TFT_BLACK);
-  
+
   // Set text properties
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextWrap(true);
   tft.setTextSize(1);
-  
+
   // Title
   tft.setTextSize(2);
   tft.setCursor(30, 20);
   tft.println("Aura2 Setup");
-  
+
   // Device ID
   tft.setTextSize(1);
   tft.setCursor(10, 55);
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
   tft.println("Device: " + getDeviceIdentifier());
-  
+
   // Main instructions
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setCursor(10, 80);
   tft.println("WiFi configuration needed:");
-  
+
   tft.setCursor(10, 100);
   tft.println("1. Connect phone/laptop to:");
-  
+
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
   tft.setCursor(20, 115);
   tft.println("   \"" + getDeviceIdentifier() + "\"");
-  
+
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setCursor(10, 135);
   tft.println("2. Open web browser");
-  
+
   tft.setCursor(10, 150);
   tft.println("3. Go to: ");
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
   tft.print("192.168.4.1");
-  
+
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setCursor(10, 170);
   tft.println("4. Select your WiFi network");
-  
+
   tft.setCursor(10, 185);
   tft.println("5. Enter password");
-  
+
   // Status at bottom
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
   tft.setCursor(10, 210);
   tft.println("Starting WiFi hotspot...");
-  
+
   // Force display update
   delay(100);
 }
 
-void updateWiFiSplashStatus(const String& status, uint16_t color = TFT_GREEN)
+void updateWiFiSplashStatus(const String &status, uint16_t color = TFT_GREEN)
 {
   // Clear status area
   tft.fillRect(10, 210, 300, 20, TFT_BLACK);
-  
+
   // Update status
   tft.setTextColor(color, TFT_BLACK);
   tft.setTextSize(1);
   tft.setCursor(10, 210);
   tft.println(status);
-  
+
   delay(100);
 }
 
@@ -226,12 +281,14 @@ void saveConfigCallback()
 }
 
 // WiFiManager callback functions for splash screen updates
-void onWiFiManagerAPStarted(WiFiManager* wifiManager) {
+void onWiFiManagerAPStarted(WiFiManager *wifiManager)
+{
   updateWiFiSplashStatus("Hotspot ready! Connect now", TFT_YELLOW);
   Serial.println("AP Mode started");
 }
 
-void onWiFiManagerConnected() {
+void onWiFiManagerConnected()
+{
   updateWiFiSplashStatus("WiFi connected! Loading...", TFT_GREEN);
   Serial.println("WiFi connected via WiFiManager");
 }
@@ -239,15 +296,16 @@ void onWiFiManagerConnected() {
 void setupWifi()
 {
   Serial.println("Connecting to WiFi...");
-  
+
   // Check if already connected
-  if (WiFi.status() == WL_CONNECTED) {
+  if (WiFi.status() == WL_CONNECTED)
+  {
     Serial.println("Already connected to WiFi");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
     return;
   }
-  
+
   // Show splash screen for configuration
   showWiFiSplashScreen();
 
@@ -260,21 +318,24 @@ void setupWifi()
   // Set callbacks
   wifiManager.setSaveConfigCallback(saveConfigCallback);
   wifiManager.setAPCallback(onWiFiManagerAPStarted);
-  
+
   // Set timeout for captive portal (5 minutes)
   wifiManager.setConfigPortalTimeout(300);
-  
+
   // Update status before starting
   updateWiFiSplashStatus("Checking saved WiFi...", TFT_CYAN);
-  
+
   // Try to connect, if it fails start captive portal
-  if (!wifiManager.autoConnect(getDeviceIdentifier().c_str())) {
+  if (!wifiManager.autoConnect(getDeviceIdentifier().c_str()))
+  {
     updateWiFiSplashStatus("WiFi setup timeout!", TFT_RED);
     Serial.println("Failed to connect and hit timeout");
     delay(3000);
     // Reset and try again
     ESP.restart();
-  } else {
+  }
+  else
+  {
     // Connected successfully
     updateWiFiSplashStatus("WiFi connected successfully!", TFT_GREEN);
     Serial.println("WiFi connected");
@@ -340,11 +401,14 @@ void setupUi()
     lv_obj_set_grid_cell(forecast_temp_label[row], LV_GRID_ALIGN_CENTER, col, 1, LV_GRID_ALIGN_CENTER, row, 1);
   }
 
-  auto clock_timer = lv_timer_create(updateClock, 10 * 1000, NULL);           // Update clock every 10 seconds
-  auto weather_timer = lv_timer_create(update_weather, 10 * 60 * 1000, NULL); // Update weather every 10 minutes
+  // Because LVGL timers are used, we set up periodic update timers here
+  auto clock_timer = lv_timer_create(updateClock, 10 * 1000, NULL);          // Update clock every 10 seconds
+  auto weather_timer = lv_timer_create(updateWeather, 10 * 60 * 1000, NULL); // Update weather every 10 minutes
+  auto dim_timer = lv_timer_create(checkDimTime, 1 * 60 * 1000, NULL);      // Check dim time every minute
 
   lv_timer_ready(clock_timer);   // Initial clock update
   lv_timer_ready(weather_timer); // Initial weather update
+  lv_timer_ready(dim_timer);     // Initial dim time check
 }
 
 void setupClock()
@@ -390,7 +454,6 @@ void setupMdns()
   }
   Serial.println("mDNS responder started");
 
-  // MDNS.setInstanceName("Aura2 Weather Display");
   MDNS.addService("http", "tcp", 80);
   MDNS.enableArduino();
 }
@@ -428,7 +491,7 @@ void setup()
   weather_city = preferences.getString("weather_city", weather_city);
   weather_region = preferences.getString("weather_region", weather_region);
   show_24hour_clock = preferences.getBool("show_24hour", show_24hour_clock);
-  dim_at_night = preferences.getBool("dim_at_night", dim_at_night);
+  dim_at_time = preferences.getBool("dim_at_time", dim_at_time);
   dim_start_time = preferences.getString("dim_start_time", dim_start_time);
   dim_end_time = preferences.getString("dim_end_time", dim_end_time);
 
