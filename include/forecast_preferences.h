@@ -5,6 +5,7 @@
 extern Preferences preferences;
 extern bool display_seven_day_forecast;
 extern String mqttServer;
+extern String mqttUser;
 extern String mqttPassword;
 extern uint32_t brightness;
 extern bool use_fahrenheit;
@@ -16,3 +17,5 @@ extern bool show_24hour_clock;
 extern bool dim_at_time;
 extern String dim_start_time;  
 extern String dim_end_time;
+
+String getDeviceIdentifier();

@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <WiFi.h>
-#include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <lvgl.h>
 #include <TFT_eSPI.h>
@@ -12,6 +11,7 @@
 #include "forecast_weather.h"
 #include "forecast_widgets.h"
 #include "forecast_settings.h"
+#include "forecast_mqtt.h"
 
 #define XPT2046_IRQ 36  // T_IRQ
 #define XPT2046_MOSI 32 // T_DIN
@@ -41,6 +41,7 @@ Preferences preferences;
 bool display_seven_day_forecast = true;
 String mqttServer = "";
 String mqttPassword = "";
+String mqttUser = "";
 uint32_t brightness = 255;
 bool use_fahrenheit = true;
 float weather_latitude = 29.7604;
@@ -210,16 +211,12 @@ void saveConfigCallback()
 
 void showWiFiSplashScreen()
 {
-  if (wifiManager.getWiFiIsSaved())
-    return;
-
   // Clear screen with black background
   tft.fillScreen(TFT_BLACK);
 
   // Set text properties
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextWrap(true);
-  tft.setTextSize(1);
 
   // Title
   tft.setTextSize(2);
@@ -232,38 +229,49 @@ void showWiFiSplashScreen()
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
   tft.println("Device: " + getDeviceIdentifier());
 
-  // Main instructions
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setCursor(10, 80);
-  tft.println("WiFi configuration needed:");
+  if (!wifiManager.getWiFiIsSaved())
+  {
+    // Main instructions
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.setCursor(10, 80);
+    tft.println("WiFi configuration needed:");
 
-  tft.setCursor(10, 100);
-  tft.println("1. Connect phone/laptop to:");
+    tft.setCursor(10, 100);
+    tft.println("1. Connect phone/laptop to:");
 
-  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
-  tft.setCursor(20, 115);
-  tft.println("   \"" + getDeviceIdentifier() + "\"");
+    tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+    tft.setCursor(20, 115);
+    tft.println("   \"" + getDeviceIdentifier() + "\"");
 
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setCursor(10, 135);
-  tft.println("2. Open web browser");
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.setCursor(10, 135);
+    tft.println("2. Open web browser");
 
-  tft.setCursor(10, 150);
-  tft.println("3. Go to: ");
-  tft.setTextColor(TFT_CYAN, TFT_BLACK);
-  tft.print("192.168.4.1");
+    tft.setCursor(10, 150);
+    tft.println("3. Go to: ");
+    tft.setTextColor(TFT_CYAN, TFT_BLACK);
+    tft.print("192.168.4.1");
 
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setCursor(10, 170);
-  tft.println("4. Select your WiFi network");
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.setCursor(10, 170);
+    tft.println("4. Select your WiFi network");
 
-  tft.setCursor(10, 185);
-  tft.println("5. Enter password");
+    tft.setCursor(10, 185);
+    tft.println("5. Enter password");
 
-  // Status at bottom
-  tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.setCursor(10, 210);
-  tft.println("Starting WiFi hotspot...");
+    // Status at bottom
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.setCursor(10, 210);
+    tft.println("Starting WiFi hotspot...");
+  }
+  else
+  {
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.setCursor(10, 80);
+    tft.println("Starting up...");
+    tft.setCursor(10, 100);
+    tft.println("Connecting...");
+  }
 
   // Force display update
   delay(100);
@@ -271,9 +279,6 @@ void showWiFiSplashScreen()
 
 void updateWiFiSplashStatus(const String &status, uint16_t color = TFT_GREEN)
 {
-  if (wifiManager.getWiFiIsSaved())
-    return;
-
   // Clear status area
   tft.fillRect(10, 210, 300, 20, TFT_BLACK);
 
@@ -289,13 +294,13 @@ void updateWiFiSplashStatus(const String &status, uint16_t color = TFT_GREEN)
 // WiFiManager callback functions for splash screen updates
 void onWiFiManagerAPStarted(WiFiManager *wifiManager)
 {
-  updateWiFiSplashStatus("Hotspot ready! Connect now", TFT_YELLOW);
+  updateWiFiSplashStatus("Hotspot ready. Connect now", TFT_YELLOW);
   Serial.println("AP Mode started");
 }
 
 void onWiFiManagerConnected()
 {
-  updateWiFiSplashStatus("WiFi connected! Loading...", TFT_GREEN);
+  updateWiFiSplashStatus("WiFi connected. Loading...", TFT_GREEN);
   Serial.println("WiFi connected via WiFiManager");
 }
 
@@ -316,9 +321,11 @@ void setupWifi()
   showWiFiSplashScreen();
 
   WiFiManagerParameter custom_mqtt_server("mqtt_server", "MQTT Server", mqttServer.c_str(), 40);
+  WiFiManagerParameter custom_mqtt_user("mqtt_user", "MQTT User", mqttUser.c_str(), 40);
   WiFiManagerParameter custom_mqtt_password("mqtt_password", "MQTT Password", mqttPassword.c_str(), 40);
 
   wifiManager.addParameter(&custom_mqtt_server);
+  wifiManager.addParameter(&custom_mqtt_user);
   wifiManager.addParameter(&custom_mqtt_password);
 
   // Set callbacks
@@ -334,7 +341,7 @@ void setupWifi()
   // Try to connect, if it fails start captive portal
   if (!wifiManager.autoConnect(getDeviceIdentifier().c_str()))
   {
-    updateWiFiSplashStatus("WiFi setup timeout!", TFT_RED);
+    updateWiFiSplashStatus("WiFi setup timeout...", TFT_RED);
     Serial.println("Failed to connect and hit timeout");
     delay(3000);
     // Reset and try again
@@ -343,7 +350,7 @@ void setupWifi()
   else
   {
     // Connected successfully
-    updateWiFiSplashStatus("WiFi connected successfully!", TFT_GREEN);
+    updateWiFiSplashStatus("WiFi connected successfully...", TFT_GREEN);
     Serial.println("WiFi connected");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
@@ -353,14 +360,17 @@ void setupWifi()
   if (shouldSaveConfig)
   {
     mqttServer = String(custom_mqtt_server.getValue());
+    mqttUser = String(custom_mqtt_user.getValue());
     mqttPassword = String(custom_mqtt_password.getValue());
 
     Serial.println("Saving config:");
     Serial.println("MQTT Server: " + mqttServer);
+    Serial.println("MQTT User: " + mqttUser);
     Serial.println("MQTT Password: " + mqttPassword);
 
     // Save to preferences
     preferences.putString("mqtt_server", mqttServer);
+    preferences.putString("mqtt_user", mqttUser);
     preferences.putString("mqtt_password", mqttPassword);
   }
 
@@ -408,13 +418,15 @@ void setupUi()
   }
 
   // Because LVGL timers are used, we set up periodic update timers here
-  auto clock_timer = lv_timer_create(updateClock, 10 * 1000, NULL);          // Update clock every 10 seconds
-  auto weather_timer = lv_timer_create(updateWeather, 10 * 60 * 1000, NULL); // Update weather every 10 minutes
-  auto dim_timer = lv_timer_create(checkDimTime, 1 * 60 * 1000, NULL);      // Check dim time every minute
+  auto clock_timer = lv_timer_create(updateClock, 10 * 1000, NULL);            // Update clock every 10 seconds
+  auto weather_timer = lv_timer_create(updateWeather, 10 * 60 * 1000, NULL);   // Update weather every 10 minutes
+  auto dim_timer = lv_timer_create(checkDimTime, 1 * 60 * 1000, NULL);         // Check dim time every minute
+  auto mqtt_timer = lv_timer_create(checkMqttConnection, 5 * 60 * 1000, NULL); // Check MQTT connection every 5 minutes
 
   lv_timer_ready(clock_timer);   // Initial clock update
   lv_timer_ready(weather_timer); // Initial weather update
   lv_timer_ready(dim_timer);     // Initial dim time check
+  lv_timer_ready(mqtt_timer);    // Initial MQTT connection check
 }
 
 void setupClock()
@@ -477,6 +489,9 @@ void setup()
   // Initialize TFT display hardware
   tft.init();
   tft.setRotation(2);
+  tft.fillRect(0, 0, screenHeight, screenWidth, TFT_WHITE);
+  delay(100);
+  tft.fillScreen(TFT_WHITE);
   pinMode(LCD_BACKLIGHT_PIN, OUTPUT);
   digitalWrite(LCD_BACKLIGHT_PIN, HIGH); // Turn on backlight
 
@@ -522,14 +537,12 @@ void setup()
   // Set up everything else
   setupWifi();
   setupMdns();
+  setupMqtt();
   setupUi();
   setupClock();
   setupWebserver();
 
   Serial.println("UI initialized and ready");
-
-  // Force initial screen refresh
-  lv_refr_now(display);
 
   Serial.println("Setup complete");
 }
