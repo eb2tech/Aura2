@@ -5,7 +5,11 @@
 #include "forecast_weather.h"
 #include "forecast_widgets.h"
 #include "forecast_preferences.h"
+#include "forecast_mqtt.h"
 #include "ui/ui.h"
+
+float temperature_now = 0.0;
+float feels_like_temperature = 0.0;
 
 const lv_img_dsc_t *chooseImage(int code, int is_day)
 {
@@ -282,6 +286,9 @@ void updateWeather(lv_timer_t *timer)
             int code_now = doc["current"]["weather_code"].as<int>();
             int is_day = doc["current"]["is_day"].as<int>();
 
+            temperature_now = t_now;
+            feels_like_temperature = t_ap;
+            
             if (use_fahrenheit)
             {
                 t_now = t_now * 9.0 / 5.0 + 32.0;
@@ -373,6 +380,8 @@ void updateWeather(lv_timer_t *timer)
         Serial.println("HTTP GET failed at " + url);
     }
     http.end();
+
+    publishSensorStates();
 }
 
 void toggleSevenDayForecast()

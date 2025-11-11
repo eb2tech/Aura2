@@ -59,6 +59,8 @@ LV_IMG_DECLARE(image_tornado);
 LV_IMG_DECLARE(image_wintry_mix_rain_snow);
 
 extern bool display_seven_day_forecast;
+extern float temperature_now;
+extern float feels_like_temperature;
 
 void updateWeather(lv_timer_t *timer);
 void toggleSevenDayForecast();

@@ -8,6 +8,9 @@ extern "C" {
 #endif
 
 extern void action_toggle_forecast(lv_event_t * e);
+extern void action_navigate_home(lv_event_t * e);
+extern void action_navigate_settings(lv_event_t * e);
+extern void action_init_settings(lv_event_t * e);
 
 
 #ifdef __cplusplus

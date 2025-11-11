@@ -3,12 +3,25 @@
 #include <LittleFS.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include "ui/ui.h"
 #include "forecast_preferences.h"
 #include "forecast_settings.h"
 #include "forecast_weather.h"
 #include "forecast_widgets.h"
+#include "forecast_mqtt.h"
 
 #define LCD_BACKLIGHT_PIN 21
+
+void initializeSettingsScreen()
+{
+    Serial.println("Initializing settings screen...");
+
+    String ipv4LabelText = "http://" + WiFi.localIP().toString();
+    String mdnsLabelText = "http://" + getDeviceIdentifier() + ".local";
+
+    lv_label_set_text(objects.ipv4_label, ipv4LabelText.c_str());
+    lv_label_set_text(objects.mdns_label, mdnsLabelText.c_str());
+}
 
 AsyncWebServer server(80);
 
@@ -117,6 +130,7 @@ void setupWebserver()
       // Save to preferences for persistence
       preferences.putUInt("brightness", brightnessValue);
       brightness = brightnessValue;
+      publishSensorStates();
       
       request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 

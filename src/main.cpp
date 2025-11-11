@@ -44,10 +44,10 @@ String mqttPassword = "";
 String mqttUser = "";
 uint32_t brightness = 255;
 bool use_fahrenheit = true;
-float weather_latitude = 29.7604;
-float weather_longitude = -95.3698;
-String weather_city = "Houston";
-String weather_region = "TX";
+float weather_latitude = 0;
+float weather_longitude = 0;
+String weather_city = "";
+String weather_region = "";
 bool show_24hour_clock = false;
 bool dim_at_time = false;
 String dim_start_time = "22:00";
@@ -67,7 +67,9 @@ String getChipIdString()
 
 String getDeviceIdentifier()
 {
-  return "Aura2-" + getChipIdString();
+  String chipIdStr = getChipIdString().substring(0, 4);
+  chipIdStr.toLowerCase();
+  return "aura2-" + chipIdStr;
 }
 
 bool itsDimTime()
@@ -549,8 +551,10 @@ void setup()
 
 void loop()
 {
+  const uint32_t delayMs = 10;
+
   // CRITICAL: Tell LVGL how much time has passed
-  lv_tick_inc(3); // 3ms matches our delay below for faster refresh
+  lv_tick_inc(delayMs); 
 
   // Handle LVGL tasks
   lv_timer_handler();
@@ -558,6 +562,9 @@ void loop()
   // Handle EEZ Studio UI updates
   ui_tick();
 
-  // Small delay to prevent watchdog issues - reduced for faster refresh
-  delay(3);
+  // Handle MQTT tasks
+  loopMqtt();
+
+  // Small delay to prevent watchdog issues
+  delay(delayMs);
 }
