@@ -381,7 +381,7 @@ void updateWeather(lv_timer_t *timer)
     }
     http.end();
 
-    publishSensorStates();
+    publishSensorState();
 }
 
 void toggleSevenDayForecast()

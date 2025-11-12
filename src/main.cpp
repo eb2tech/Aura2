@@ -126,6 +126,14 @@ void checkDimTime(lv_timer_t *timer)
   }
 }
 
+backlightState_t getBacklightState()
+{
+  backlightState_t state;
+  state.isOn = (brightness > 0) && !dimModeActive;
+  state.brightness = brightness;
+  return state;
+}
+
 void updateClock(lv_timer_t *timer)
 {
   struct tm timeinfo;

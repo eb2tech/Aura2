@@ -7,4 +7,5 @@ void loopMqtt();
 void setupMqtt();
 
 void publishHomeAssistantDiscovery();
-void publishSensorStates();
+void publishSensorState();
+void publishBacklightState();

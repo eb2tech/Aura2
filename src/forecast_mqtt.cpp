@@ -6,6 +6,7 @@
 #include "forecast_mqtt.h"
 #include "forecast_preferences.h"
 #include "forecast_weather.h"
+#include "forecast_widgets.h"
 
 #define LCD_BACKLIGHT_PIN 21
 
@@ -32,34 +33,26 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     if (topicStr == ("aura/" + deviceId + "/backlight/set"))
     {
         auto state = doc["state"].as<String>();
+        auto brightnessValue = doc["brightness"].as<uint8_t>();
 
         if (state == "ON")
         {
-            if (brightness == 0)
-            {
-                brightness = 128; // Default brightness when turning on
-                preferences.putUInt("brightness", brightness);
-            }
-                analogWrite(LCD_BACKLIGHT_PIN, brightness);
+            brightness = constrain(brightnessValue, 1, 255);
 
-                Serial.println("Backlight turned ON via MQTT");
-                publishSensorStates();
+            analogWrite(LCD_BACKLIGHT_PIN, brightness);
+            preferences.putUInt("brightness", brightness);
+
+            Serial.println("Backlight turned ON via MQTT");
+            publishBacklightState();
         }
         else if (state == "OFF")
         {
+            brightness = 0;
             analogWrite(LCD_BACKLIGHT_PIN, 0);
+            preferences.putUInt("brightness", brightness);
             Serial.println("Backlight turned OFF via MQTT");
-            publishSensorStates();
+            publishBacklightState();
         }
-    }
-    else if (topicStr == ("aura/" + deviceId + "/backlight/brightness/set"))
-    {
-        int newBrightness = doc["brightness"].as<int>();
-        brightness = constrain(newBrightness, 0, 255);
-        preferences.putUInt("brightness", brightness);
-        analogWrite(LCD_BACKLIGHT_PIN, brightness);
-        Serial.println("Backlight brightness set to " + String(brightness) + " via MQTT");
-        publishSensorStates();
     }
 
     // mqttDispatcher.dispatch(topic, message);
@@ -105,7 +98,7 @@ void checkMqttConnection(lv_timer_t *timer)
             {
                 Serial.println("MQTT connected successfully");
                 mqttConnected = true;
-                
+
                 // Publish Home Assistant discovery messages
                 publishHomeAssistantDiscovery();
             }
@@ -138,7 +131,7 @@ void setupMqtt()
 {
     // Increase buffer size for Home Assistant discovery messages
     mqttClient.setBufferSize(1024);
-    
+
     if (discoverMqttBroker())
     {
         checkMqttConnection(nullptr); // Initial connection attempt
@@ -162,95 +155,85 @@ void publishHomeAssistantDiscovery()
 
     String deviceId = getDeviceIdentifier();
     String baseTopic = "homeassistant";
-    
+    String state_topic = "aura/" + deviceId + "/temperature";
+
     // Device information for all entities
     JsonDocument deviceInfo;
-    deviceInfo["ids"] = deviceId;
+    deviceInfo["identifiers"].add(deviceId);
     deviceInfo["name"] = "Aura2 Weather Display";
-    deviceInfo["mf"] = "Aura";
-    deviceInfo["mdl"] = ESP.getChipModel();
-    deviceInfo["sw"] = "1.0.0";
-
-    // Origin
-    JsonDocument originInfo;
-    originInfo["name"] = "aura2mqtt";
-    originInfo["sw"] = "1.0.0";
-    originInfo["url"] = "https://github.com/eb2tech/Aura2";
+    deviceInfo["manufacturer"] = "Aura2";
+    deviceInfo["model"] = ESP.getChipModel();
 
     // Temperature Sensor
     JsonDocument tempConfig;
-    tempConfig["p"] = "sensor";
-    tempConfig["device_class"] = "temperature";
+    tempConfig["name"] = "Temperature";
+    tempConfig["state_topic"] = state_topic;
     tempConfig["unit_of_measurement"] = "°C";
+    tempConfig["device_class"] = "temperature";
     tempConfig["value_template"] = "{{ value_json.temperature }}";
     tempConfig["unique_id"] = deviceId + "_temperature";
-    tempConfig["name"] = "Temperature";
+    tempConfig["device"] = deviceInfo;
 
     // Feels Like Temperature Sensor
     JsonDocument feelsLikeConfig;
-    feelsLikeConfig["p"] = "sensor";
-    feelsLikeConfig["device_class"] = "temperature";
+    feelsLikeConfig["name"] = "Feels Like Temperature";
+    feelsLikeConfig["state_topic"] = state_topic;
     feelsLikeConfig["unit_of_measurement"] = "°C";
+    feelsLikeConfig["device_class"] = "temperature";
     feelsLikeConfig["value_template"] = "{{ value_json.feels_like }}";
     feelsLikeConfig["unique_id"] = deviceId + "_feels_like";
-    feelsLikeConfig["name"] = "Feels Like Temperature";
+    feelsLikeConfig["device"] = deviceInfo;
 
-    JsonDocument configurationInfo;
-    configurationInfo["dev"] = deviceInfo;
-    configurationInfo["o"] = originInfo;
-    configurationInfo["cmps"].add(tempConfig);
-    configurationInfo["cmps"].add(feelsLikeConfig);
-    configurationInfo["state_topic"] = "aura2/" + deviceId + "/state";
+    String tempConfigTopic = baseTopic + "/sensor/" + deviceId + "_temp/config";
+    String tempConfigPayload;
+    serializeJson(tempConfig, tempConfigPayload);
+    auto tempPublishResult = mqttClient.publish(tempConfigTopic.c_str(), tempConfigPayload.c_str(), true);
 
-    String configTopic = baseTopic + "/device/" + deviceId + "/config";
-    String configPayload;
-    serializeJson(configurationInfo, configPayload);
-    
-    if (mqttClient.publish(configTopic.c_str(), configPayload.c_str(), true))
+    String feelsLikeConfigTopic = baseTopic + "/sensor/" + deviceId + "_feels_like/config";
+    String feelsLikeConfigPayload;
+    serializeJson(feelsLikeConfig, feelsLikeConfigPayload);
+    auto feelsLikePublishResult = mqttClient.publish(feelsLikeConfigTopic.c_str(), feelsLikeConfigPayload.c_str(), true);
+
+    if (tempPublishResult && feelsLikePublishResult)
     {
         Serial.println("Published Aura2 discovery");
 
         // Publish initial sensor states
-        publishSensorStates();
+        publishSensorState();
     }
 
-    // // Backlight Light Entity
-    // JsonDocument backlightConfig;
-    // backlightConfig["name"] = "Backlight";
-    // backlightConfig["unique_id"] = deviceId + "_backlight";
-    // backlightConfig["state_topic"] = "aura/" + deviceId + "/backlight/state";
-    // backlightConfig["command_topic"] = "aura/" + deviceId + "/backlight/set";
-    // backlightConfig["brightness_state_topic"] = "aura/" + deviceId + "/backlight/brightness";
-    // backlightConfig["brightness_command_topic"] = "aura/" + deviceId + "/backlight/brightness/set";
-    // backlightConfig["brightness_scale"] = 255;
-    // backlightConfig["schema"] = "json";
-    // backlightConfig["icon"] = "mdi:brightness-6";
-    // backlightConfig["device"] = deviceInfo;
+    // Backlight Light Entity
+    JsonDocument backlightConfig;
+    backlightConfig["name"] = "Backlight";
+    backlightConfig["command_topic"] = "aura/" + deviceId + "/backlight/set";
+    backlightConfig["state_topic"] = "aura/" + deviceId + "/backlight/state";
+    backlightConfig["schema"] = "json";
+    backlightConfig["brightness"] = true;
+    backlightConfig["unique_id"] = deviceId + "_backlight";
+    backlightConfig["brightness_scale"] = 255;
+    backlightConfig["device"] = deviceInfo;
 
-    // String backlightConfigTopic = baseTopic + "/light/" + deviceId + "_backlight/config";
-    // String backlightConfigPayload;
-    // serializeJson(backlightConfig, backlightConfigPayload);
-    
-    // if (mqttClient.publish(backlightConfigTopic.c_str(), backlightConfigPayload.c_str(), true))
-    // {
-    //     Serial.println("Published backlight discovery");
-        
-    //     // Subscribe to backlight command topics
-    //     String backlightSetTopic = "aura/" + deviceId + "/backlight/set";
-    //     String brightnessSetTopic = "aura/" + deviceId + "/backlight/brightness/set";
-        
-    //     mqttClient.subscribe(backlightSetTopic.c_str());
-    //     mqttClient.subscribe(brightnessSetTopic.c_str());
-        
-    //     // Publish initial backlight state
-    //     publishBacklightState();
-    // }
+    String backlightConfigTopic = baseTopic + "/light/" + deviceId + "_backlight/config";
+    String backlightConfigPayload;
+    serializeJson(backlightConfig, backlightConfigPayload);
+
+    if (mqttClient.publish(backlightConfigTopic.c_str(), backlightConfigPayload.c_str(), true))
+    {
+        Serial.println("Published backlight discovery");
+
+        // Subscribe to backlight command topics
+        String backlightSetTopic = "aura/" + deviceId + "/backlight/set";
+        mqttClient.subscribe(backlightSetTopic.c_str());
+
+        // Publish initial backlight state
+        publishBacklightState();
+    }
 
     discoveryPublished = true;
     Serial.println("Home Assistant discovery messages published");
 }
 
-void publishTemperature(float temperature)
+void publishSensorState()
 {
     if (!mqttConnected)
     {
@@ -259,34 +242,6 @@ void publishTemperature(float temperature)
 
     String deviceId = getDeviceIdentifier();
     String topic = "aura/" + deviceId + "/temperature";
-    String payload = String(temperature, 1);
-    
-    mqttClient.publish(topic.c_str(), payload.c_str());
-}
-
-void publishFeelsLikeTemperature(float feelsLike)
-{
-    if (!mqttConnected)
-    {
-        return;
-    }
-
-    String deviceId = getDeviceIdentifier();
-    String topic = "aura/" + deviceId + "/feels_like";
-    String payload = String(feelsLike, 1);
-    
-    mqttClient.publish(topic.c_str(), payload.c_str());
-}
-
-void publishSensorStates()
-{
-    if (!mqttConnected)
-    {
-        return;
-    }
-
-    String deviceId = getDeviceIdentifier();
-    String topic = "aura/" + deviceId + "/state";
 
     JsonDocument statePayload;
     statePayload["temperature"] = temperature_now;
@@ -294,7 +249,7 @@ void publishSensorStates()
 
     String payload;
     serializeJson(statePayload, payload);
-    
+
     mqttClient.publish(topic.c_str(), payload.c_str());
 }
 
@@ -306,14 +261,16 @@ void publishBacklightState()
     }
 
     String deviceId = getDeviceIdentifier();
-    
+    auto backlightState = getBacklightState();
+
     // Publish state (ON/OFF)
     String stateTopic = "aura/" + deviceId + "/backlight/state";
-    String statePayload = (brightness > 0) ? "ON" : "OFF";
-    mqttClient.publish(stateTopic.c_str(), statePayload.c_str());
-    
-    // Publish brightness level
-    String brightnessTopic = "aura/" + deviceId + "/backlight/brightness";
-    String brightnessPayload = String(brightness);
-    mqttClient.publish(brightnessTopic.c_str(), brightnessPayload.c_str());
+    JsonDocument statePayload;
+    statePayload["state"] = backlightState.isOn ? "ON" : "OFF";
+    statePayload["brightness"] = backlightState.brightness;
+
+    String payload;
+    serializeJson(statePayload, payload);
+
+    mqttClient.publish(stateTopic.c_str(), payload.c_str());
 }

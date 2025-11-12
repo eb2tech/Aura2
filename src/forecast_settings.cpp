@@ -130,7 +130,7 @@ void setupWebserver()
       // Save to preferences for persistence
       preferences.putUInt("brightness", brightnessValue);
       brightness = brightnessValue;
-      publishSensorStates();
+      publishBacklightState();
       
       request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
