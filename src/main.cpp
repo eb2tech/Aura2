@@ -530,7 +530,7 @@ void setup()
   Serial.println("TFT initialized. Width: " + String(tft_width) + " Height: " + String(tft_height));
 
   tft.fillScreen(TFT_BLACK);
-  tft.setRotation(2);
+  tft.setRotation(1);
   pinMode(LCD_BACKLIGHT_PIN, OUTPUT);
   digitalWrite(LCD_BACKLIGHT_PIN, HIGH); // Turn on backlight
 
