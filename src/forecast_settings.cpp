@@ -75,7 +75,7 @@ String templateProcessor(const String &var)
 void setupWebserver()
 {
     Serial.println("Setting up settings web server...");
-
+    
     if (!LittleFS.begin(false))
     {
         Serial.println("LittleFS mount failed");
@@ -100,7 +100,6 @@ void setupWebserver()
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               {
     if (LittleFS.exists("/index.html")) {
-      
       request->send(LittleFS, "/index.html", "text/html", false, &templateProcessor);
     } else {
       request->send(404, "text/plain", "index.html not found");
@@ -357,6 +356,12 @@ void setupWebserver()
         if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
           Serial.printf("Location detected: %.6f, %.6f (%s, %s)\n", lat, lon, city.c_str(), region.c_str());
           
+          // Update global variables
+          weather_latitude = lat;
+          weather_longitude = lon;
+          weather_city = city;
+          weather_region = region;
+
           // Save to preferences
           preferences.putFloat("weather_lat", lat);
           preferences.putFloat("weather_lon", lon);

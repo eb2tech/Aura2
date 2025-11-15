@@ -46,8 +46,8 @@ uint32_t brightness = 255;
 bool use_fahrenheit = true;
 float weather_latitude = 0;
 float weather_longitude = 0;
-String weather_city = "";
-String weather_region = "";
+String weather_city = "Unknown";
+String weather_region = "Unknown";
 bool show_24hour_clock = false;
 bool dim_at_time = false;
 String dim_start_time = "22:00";
@@ -211,16 +211,59 @@ void touchpadRead(lv_indev_t *indev, lv_indev_data_t *data)
 }
 
 WiFiManager wifiManager;
-bool shouldSaveConfig = false;
+bool saveConfigCalledShouldReboot = false;
 
 void saveConfigCallback()
 {
-  Serial.println("Should save config");
-  shouldSaveConfig = true;
+  Serial.println("***** saveConfigCallback called *****");
+  saveConfigCalledShouldReboot = true;
+}
+
+// Add this function before showWiFiSplashScreen()
+bool isWiFiConfigValid()
+{
+  // Check if SSID is stored
+  if (!wifiManager.getWiFiIsSaved())
+  {
+    Serial.println("No saved WiFi credentials");
+    return false;
+  }
+
+  Serial.println("Testing WiFi connection to: " + WiFi.SSID());
+
+  // Try to connect with timeout
+  WiFi.begin(); // Use saved credentials
+  int attempts = 0;
+  const int maxAttempts = 20; // 10 seconds timeout
+
+  while (WiFi.status() != WL_CONNECTED && attempts < maxAttempts)
+  {
+    delay(500);
+    attempts++;
+    Serial.print(".");
+  }
+  Serial.println();
+
+  bool connected = (WiFi.status() == WL_CONNECTED);
+  if (connected)
+  {
+    Serial.println("WiFi connection test successful");
+  }
+  else
+  {
+    Serial.println("WiFi connection test failed - status: " + String(WiFi.status()));
+  }
+
+  return connected;
 }
 
 void showWiFiSplashScreen()
 {
+  auto rotation = tft.getRotation();
+  Serial.println("Display rotation: " + String(rotation));
+
+  //tft.setRotation(1); // Landscape
+
   // Clear screen with black background
   tft.fillScreen(TFT_BLACK);
 
@@ -239,7 +282,7 @@ void showWiFiSplashScreen()
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
   tft.println("Device: " + getDeviceIdentifier());
 
-  if (!wifiManager.getWiFiIsSaved())
+  if (!isWiFiConfigValid())
   {
     // Main instructions
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -247,7 +290,7 @@ void showWiFiSplashScreen()
     tft.println("WiFi configuration needed:");
 
     tft.setCursor(10, 100);
-    tft.println("1. Connect phone/laptop to:");
+    tft.println("1. Connect phone/laptop WiFi to:");
 
     tft.setTextColor(TFT_YELLOW, TFT_BLACK);
     tft.setCursor(20, 115);
@@ -258,9 +301,9 @@ void showWiFiSplashScreen()
     tft.println("2. Open web browser");
 
     tft.setCursor(10, 150);
-    tft.println("3. Go to: ");
+    tft.print("3. Go to: ");
     tft.setTextColor(TFT_CYAN, TFT_BLACK);
-    tft.print("192.168.4.1");
+    tft.println("192.168.4.1");
 
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
     tft.setCursor(10, 170);
@@ -278,9 +321,9 @@ void showWiFiSplashScreen()
   {
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
     tft.setCursor(10, 80);
-    tft.println("Starting up...");
+    tft.println("WiFi ready: " + WiFi.SSID());
     tft.setCursor(10, 100);
-    tft.println("Connecting...");
+    tft.println("IP: " + WiFi.localIP().toString());
   }
 
   // Force display update
@@ -330,14 +373,6 @@ void setupWifi()
   // Show splash screen for configuration
   showWiFiSplashScreen();
 
-  WiFiManagerParameter custom_mqtt_server("mqtt_server", "MQTT Server", mqttServer.c_str(), 40);
-  WiFiManagerParameter custom_mqtt_user("mqtt_user", "MQTT User", mqttUser.c_str(), 40);
-  WiFiManagerParameter custom_mqtt_password("mqtt_password", "MQTT Password", mqttPassword.c_str(), 40);
-
-  wifiManager.addParameter(&custom_mqtt_server);
-  wifiManager.addParameter(&custom_mqtt_user);
-  wifiManager.addParameter(&custom_mqtt_password);
-
   // Set callbacks
   wifiManager.setSaveConfigCallback(saveConfigCallback);
   wifiManager.setAPCallback(onWiFiManagerAPStarted);
@@ -367,21 +402,12 @@ void setupWifi()
     delay(2000); // Show success message briefly
   }
 
-  if (shouldSaveConfig)
+  if (saveConfigCalledShouldReboot)
   {
-    mqttServer = String(custom_mqtt_server.getValue());
-    mqttUser = String(custom_mqtt_user.getValue());
-    mqttPassword = String(custom_mqtt_password.getValue());
-
-    Serial.println("Saving config:");
-    Serial.println("MQTT Server: " + mqttServer);
-    Serial.println("MQTT User: " + mqttUser);
-    Serial.println("MQTT Password: " + mqttPassword);
-
-    // Save to preferences
-    preferences.putString("mqtt_server", mqttServer);
-    preferences.putString("mqtt_user", mqttUser);
-    preferences.putString("mqtt_password", mqttPassword);
+    updateWiFiSplashStatus("Rebooting to apply config...", TFT_YELLOW);
+    Serial.println("Rebooting to apply new configuration...");
+    delay(2000);
+    ESP.restart();
   }
 
   Serial.println("Connected to WiFi: " + WiFi.localIP().toString());
@@ -498,13 +524,20 @@ void setup()
 
   // Initialize TFT display hardware
   tft.init();
+
+  auto tft_width = tft.width();
+  auto tft_height = tft.height();
+  Serial.println("TFT initialized. Width: " + String(tft_width) + " Height: " + String(tft_height));
+
+  tft.fillScreen(TFT_BLACK);
   tft.setRotation(2);
-  tft.fillRect(0, 0, screenHeight, screenWidth, TFT_WHITE);
-  delay(100);
-  tft.fillScreen(TFT_WHITE);
   pinMode(LCD_BACKLIGHT_PIN, OUTPUT);
   digitalWrite(LCD_BACKLIGHT_PIN, HIGH); // Turn on backlight
 
+  tft_width = tft.width();
+  tft_height = tft.height();
+  Serial.println("TFT after rotation. Width: " + String(tft_width) + " Height: " + String(tft_height));
+  
   // Initialize the touchscreen
   touchscreenSpi.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS); // Start second SPI bus for touchscreen
   touchscreen.begin(touchscreenSpi);                                         // Touchscreen init
@@ -562,7 +595,7 @@ void loop()
   const uint32_t delayMs = 10;
 
   // CRITICAL: Tell LVGL how much time has passed
-  lv_tick_inc(delayMs); 
+  lv_tick_inc(delayMs);
 
   // Handle LVGL tasks
   lv_timer_handler();

@@ -15,9 +15,9 @@
         <button onclick="detectLocation()">Detect Location</button>
         <p id="locationStatus">%WEATHER_CITY%, %WEATHER_REGION%</p>
         <div style="margin-left: 20px">
-            Latitude: %CURRENT_LAT%
+            Latitude: <span id="latitude">%CURRENT_LAT%</span>
             <br />
-            Longitude: %CURRENT_LON%
+            Longitude: <span id="longitude">%CURRENT_LON%</span>
         </div>
     </div>
 
@@ -101,6 +101,8 @@
             const location = data.city && data.region ? `${data.city}, ${data.region}` : `${lat}, ${lon}`;
             
             document.getElementById("locationStatus").textContent = `Detected: ${location}`;
+            document.getElementById("latitude").textContent = lat;
+            document.getElementById("longitude").textContent = lon;
             console.log("Location detected and saved to ESP32");
           } else {
             document.getElementById("locationStatus").textContent = `Error: ${data.error}`;
