@@ -530,7 +530,15 @@ void setup()
   Serial.println("TFT initialized. Width: " + String(tft_width) + " Height: " + String(tft_height));
 
   tft.fillScreen(TFT_BLACK);
+
+  #if defined(CYD_SETUP_TYPE) && CYD_SETUP_TYPE == 1
+  tft.setRotation(2);
+  #elif defined(CYD_SETUP_TYPE) && CYD_SETUP_TYPE == 2
   tft.setRotation(1);
+  #else
+  #error "CYD_SETUP_TYPE not defined." // This is to force user to define CYD_SETUP_TYPE in platformio.ini and build for the correct setup
+  #endif
+
   pinMode(LCD_BACKLIGHT_PIN, OUTPUT);
   digitalWrite(LCD_BACKLIGHT_PIN, HIGH); // Turn on backlight
 
