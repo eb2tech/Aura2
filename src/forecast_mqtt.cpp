@@ -75,8 +75,8 @@ bool discoverMqttBroker()
     }
     else
     {
-        mqttServer = MDNS.hostname(0);
-        Serial.println("Discovered MQTT broker: " + mqttServer);
+        mqttServer = MDNS.IP(0).toString();
+        Serial.println("Discovered MQTT broker: " + MDNS.hostname(0) + " at "  + mqttServer);
         return true;
     }
 }
