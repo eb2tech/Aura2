@@ -393,7 +393,7 @@
                   onchange="updateMqttPassword(this.value)"
                   value="%MQTT_PASSWORD%"
                 />
-                <button type="button" class="password-toggle" onclick="togglePasswordVisibility()"><img src="password_2_off.svg" alt="Toggle Password Visibility" width="16" height="16" /></button>
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility()"><img src="visibility.svg" alt="Toggle Password Visibility" width="16" height="16" /></button>
               </div>
             </div>
           </div>
@@ -530,10 +530,10 @@
         
         if (passwordField.type === "password") {
           passwordField.type = "text";
-          toggleButton.innerHTML = '<img src="password_2.svg" alt="Toggle Password Visibility" width="16" height="16" />';
+          toggleButton.innerHTML = '<img src="visibility_off.svg" alt="Toggle Password Visibility" width="16" height="16" />';
         } else {
           passwordField.type = "password";
-          toggleButton.innerHTML = '<img src="password_2_off.svg" alt="Toggle Password Visibility" width="16" height="16" />';
+          toggleButton.innerHTML = '<img src="visibility.svg" alt="Toggle Password Visibility" width="16" height="16" />';
         }
       }
     </script>
