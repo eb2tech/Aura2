@@ -42,6 +42,7 @@ String getUseFahrenheit() { return use_fahrenheit ? "checked" : ""; }
 String getDimAtTime() { return dim_at_time ? "checked" : ""; }
 String getDimStartTime() { return dim_start_time; }
 String getDimEndTime() { return dim_end_time; }
+String getUseDST() { return use_dst ? "checked" : ""; }
 
 // Static dispatch table
 static const TemplateEntry templateTable[] = {
@@ -55,6 +56,7 @@ static const TemplateEntry templateTable[] = {
     {"DIM_AT_TIME_CHECKED", getDimAtTime},
     {"DIM_START_TIME", getDimStartTime},
     {"DIM_END_TIME", getDimEndTime},
+    {"USE_DST_CHECKED", getUseDST},
     {nullptr, nullptr} // Sentinel
 };
 
@@ -326,6 +328,34 @@ void setupWebserver()
     
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
+    // Handle DST setting with POST
+    server.on("/setUseDST", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+              {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, (const char*)data);
+    if (error) {
+      Serial.print("JSON parse error: ");
+      Serial.println(error.c_str());
+      request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+      return;
+    }
+    
+    if (!doc["enabled"].is<bool>()) {
+      request->send(400, "application/json", "{\"error\":\"enabled must be a boolean value\"}");
+      return;
+    }
+    
+    bool enabled = doc["enabled"];
+    
+    Serial.printf("Setting use DST to: %s\n", enabled ? "enabled" : "disabled");
+    
+    use_dst = enabled;
+    preferences.putBool("use_dst", enabled);
+    updateClock(nullptr);
+    
+    request->send(200, "application/json", "{\"status\":\"ok\"}");               }
+    );
+
     // Handle IP-based location detection with POST
     server.on("/detectLocation", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
               {
@@ -351,6 +381,8 @@ void setupWebserver()
         float lon = doc["longitude"];
         String city = doc["city"] | "Unknown";
         String region = doc["region"] | "Unknown";
+        String timeZone = doc["timezone"] | "UTC";
+        String utcOffset = doc["utc_offset"] | "+00:00";
         
         // Validate coordinates
         if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
@@ -361,12 +393,16 @@ void setupWebserver()
           weather_longitude = lon;
           weather_city = city;
           weather_region = region;
+          time_zone = timeZone;
+          utc_offset = utcOffset;
 
           // Save to preferences
           preferences.putFloat("weather_lat", lat);
           preferences.putFloat("weather_lon", lon);
           preferences.putString("weather_city", city);
           preferences.putString("weather_region", region);
+          preferences.putString("time_zone", timeZone);
+          preferences.putString("utc_offset", utcOffset);
           
           // Trigger weather update with new location
           updateWeather(nullptr);

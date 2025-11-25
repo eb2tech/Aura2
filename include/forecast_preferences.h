@@ -17,5 +17,8 @@ extern bool show_24hour_clock;
 extern bool dim_at_time;
 extern String dim_start_time;  
 extern String dim_end_time;
+extern String time_zone;
+extern String utc_offset;
+extern bool use_dst;
 
 String getDeviceIdentifier();

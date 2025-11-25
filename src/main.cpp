@@ -40,8 +40,8 @@ uint16_t touchScreenMinimumX = 200, touchScreenMaximumX = 3700, touchScreenMinim
 Preferences preferences;
 bool display_seven_day_forecast = true;
 String mqttServer = "";
-String mqttPassword = "";
-String mqttUser = "";
+String mqttPassword = "cyd";
+String mqttUser = "cyd";
 uint32_t brightness = 255;
 bool use_fahrenheit = true;
 float weather_latitude = 0;
@@ -53,6 +53,9 @@ bool dim_at_time = false;
 String dim_start_time = "22:00";
 String dim_end_time = "06:00";
 bool dimModeActive = false;
+String time_zone = "America/Chicago";
+String utc_offset = "-0600";
+bool use_dst = true;
 
 uint64_t getChipId()
 {
@@ -141,6 +144,12 @@ void updateClock(lv_timer_t *timer)
     return;
 
   char buf[16];
+  
+  // Adjust for daylight saving time if enabled
+  if (use_dst) {
+    timeinfo.tm_hour += 1; // Add one hour for DST
+    Serial.println("Daylight saving time is active - adding 1 hour");
+  }
 
   if (show_24hour_clock)
   {
@@ -467,12 +476,22 @@ void setupUi()
 
 void setupClock()
 {
-  // Initialize NTP time synchronization
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
-  setenv("TZ", "CST6CDT,M3.2.0,M11.1.0", 1); // Central Time Zone (adjust as needed)
-  tzset();
+  // Parse UTC offset (e.g., "-0600" = -6 hours, -0 minutes)
+  int offsetValue = utc_offset.toInt();
+  int offsetHours = offsetValue / 100;
+  int offsetMinutes = abs(offsetValue) % 100;
+  
+  // Convert to seconds for configTime()
+  long offsetSeconds = (offsetHours * 3600) + (offsetMinutes * 60);
+  
+  Serial.println("Setting up NTP with timezone: " + time_zone);
+  Serial.println("UTC offset: " + utc_offset + (use_dst ? " (DST active)" : " (Standard time)"));
+  Serial.println("Effective offset: " + String(offsetSeconds) + " seconds");
+  
+  // Initialize NTP time synchronization with offset
+  configTime(offsetSeconds, 0, "pool.ntp.org", "time.nist.gov");
 
-  Serial.println("Initializing NTP time synchronization...");
+  Serial.println("Initializing NTP time synchronization");
 
   // Wait for time to be set
   struct tm timeinfo;
@@ -480,7 +499,7 @@ void setupClock()
   const int retry_count = 10;
   while (!getLocalTime(&timeinfo) && retry < retry_count)
   {
-    Serial.println("Failed to obtain time, retrying...");
+    Serial.println("Failed to obtain time, retrying");
     delay(2000);
     retry++;
   }
@@ -566,6 +585,9 @@ void setup()
   dim_at_time = preferences.getBool("dim_at_time", dim_at_time);
   dim_start_time = preferences.getString("dim_start_time", dim_start_time);
   dim_end_time = preferences.getString("dim_end_time", dim_end_time);
+  time_zone = preferences.getString("time_zone", time_zone);
+  utc_offset = preferences.getString("utc_offset", utc_offset);
+  use_dst = preferences.getBool("use_dst", use_dst);
 
   // Initialize LVGL
   lv_init();

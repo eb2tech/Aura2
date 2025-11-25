@@ -81,6 +81,15 @@
         </div>
       </div>
     </div>
+    <div>
+      Enable Daylight Saving Time:
+      <input
+        type="checkbox"
+        id="useDST"
+        onchange="updateUseDST(this.checked)"
+        %USE_DST_CHECKED%
+      />
+    </div>
     <script>
       function detectLocation() {
         document.getElementById("locationStatus").textContent = "Detecting...";
@@ -172,6 +181,16 @@
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ endTime: time }),
+        });
+      }
+
+      function updateUseDST(isEnabled) {
+        fetch("/setUseDST", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ enabled: isEnabled }),
         });
       }
     </script>
