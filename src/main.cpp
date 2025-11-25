@@ -111,11 +111,13 @@ void checkDimTime(lv_timer_t *timer)
   {
     analogWrite(LCD_BACKLIGHT_PIN, 0);
     dimModeActive = true;
+    publishBacklightState();
   };
   auto restoreBrightness = [=]()
   {
     analogWrite(LCD_BACKLIGHT_PIN, brightness);
     dimModeActive = false;
+    publishBacklightState();
   };
 
   bool dimTime = itsDimTime();
@@ -574,6 +576,7 @@ void setup()
   preferences.begin("aura2", false);
   display_seven_day_forecast = preferences.getBool("display_7day", display_seven_day_forecast);
   mqttServer = preferences.getString("mqtt_server", mqttServer);
+  mqttUser = preferences.getString("mqtt_user", mqttUser);
   mqttPassword = preferences.getString("mqtt_password", mqttPassword);
   brightness = preferences.getUInt("brightness", brightness);
   use_fahrenheit = preferences.getBool("use_fahrenheit", use_fahrenheit);
