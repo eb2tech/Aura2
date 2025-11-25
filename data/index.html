@@ -2,125 +2,415 @@
 <html>
   <head>
     <title>Aura2 Settings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 10px;
+        color: #333;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(45deg, #2196F3, #21CBF3);
+        color: white;
+        padding: 20px;
+        text-align: center;
+      }
+
+      .header h1 {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        font-size: 28px;
+        font-weight: 600;
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      .setting-group {
+        margin-bottom: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #2196F3;
+      }
+
+      .setting-label {
+        display: block;
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+
+      .location-section {
+        text-align: center;
+      }
+
+      .detect-btn {
+        background: linear-gradient(45deg, #4CAF50, #45a049);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+      }
+
+      .detect-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+      }
+
+      .location-info {
+        margin-top: 10px;
+        padding: 8px;
+        background: white;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+
+      .coordinates {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #666;
+      }
+
+      .brightness-container {
+        position: relative;
+      }
+
+      .brightness-slider {
+        width: 100%;
+        height: 8px;
+        border-radius: 4px;
+        background: #ddd;
+        outline: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+      }
+
+      .brightness-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #2196F3;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      }
+
+      .brightness-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #2196F3;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      }
+
+      .toggle-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 28px;
+        background: #ccc;
+        border-radius: 14px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .toggle-slider {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 24px;
+        height: 24px;
+        background: white;
+        border-radius: 50%;
+        transition: transform 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      }
+
+      .toggle-switch input:checked + .toggle-slider {
+        transform: translateX(22px);
+      }
+
+      .toggle-switch input:checked {
+        background: #2196F3;
+      }
+
+      .toggle-switch:has(input:checked) {
+        background: #2196F3;
+      }
+
+      .input-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .text-input, .time-input {
+        flex: 1;
+        padding: 10px 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+      }
+
+      .text-input:focus, .time-input:focus {
+        outline: none;
+        border-color: #2196F3;
+        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+      }
+
+      .password-toggle {
+        background: #f5f5f5;
+        border: 2px solid #e0e0e0;
+        color: #666;
+        padding: 10px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s ease;
+        min-width: 50px;
+        text-align: center;
+      }
+
+      .password-toggle:hover {
+        background: #e8f4ff;
+        border-color: #2196F3;
+        color: #2196F3;
+      }
+
+      .nested-settings {
+        margin-left: 15px;
+        margin-top: 10px;
+        padding-left: 10px;
+        border-left: 2px solid #e0e0e0;
+      }
+
+      .nested-settings .setting-group {
+        background: white;
+        margin-bottom: 10px;
+      }
+
+      @media (max-width: 640px) {
+        .container {
+          margin: 5px;
+          border-radius: 8px;
+        }
+        
+        .content {
+          padding: 15px;
+        }
+        
+        .setting-group {
+          padding: 12px;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div>
-      <h1>
-        <img src="logo.png" alt="Logo" width="20" />
-        Aura2 Settings
-      </h1>
+    <div class="container">
+      <div class="header">
+        <h1>
+          <img src="logo.png" alt="Logo" width="24" />
+          Aura2 Settings
+        </h1>
+      </div>
+
+      <div class="content">
+        <div class="setting-group location-section">
+          <button class="detect-btn" onclick="detectLocation()"><img src="map_search.svg" alt="Map Icon" width="16" height="16" /> Detect Location</button>
+          <div class="location-info">
+            <div id="locationStatus">%WEATHER_CITY%, %WEATHER_REGION%</div>
+            <div class="coordinates">
+              Latitude: <span id="latitude">%CURRENT_LAT%</span> / 
+              Longitude: <span id="longitude">%CURRENT_LON%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">Display Brightness</label>
+          <div class="brightness-container">
+            <input
+              type="range"
+              min="0"
+              max="255"
+              value="%BRIGHTNESS_VALUE%"
+              id="brightnessSlider"
+              class="brightness-slider"
+              oninput="updateBrightness(this.value)"
+            />
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="toggle-container">
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="clockFormat24"
+                onchange="updateClockFormat(this.checked)"
+                %CLOCK_24H_CHECKED%
+              />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="setting-label">Use 24-hour clock format</span>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="toggle-container">
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="tempFormatF"
+                onchange="updateTempFormat(this.checked)"
+                %TEMP_F_CHECKED%
+              />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="setting-label">Use Fahrenheit temperature</span>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="toggle-container">
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="dimAtTime"
+                onchange="updateDimAtTime(this.checked)"
+                %DIM_AT_TIME_CHECKED%
+              />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="setting-label">Auto-dim display at night</span>
+          </div>
+          
+          <div class="nested-settings">
+            <div class="setting-group">
+              <label class="setting-label">Dim start time</label>
+              <input
+                type="time"
+                id="dimStartTime"
+                value="%DIM_START_TIME%"
+                class="time-input"
+                onchange="updateDimStartTime(this.value)"
+              />
+            </div>
+            <div class="setting-group">
+              <label class="setting-label">Dim end time</label>
+              <input
+                type="time"
+                id="dimEndTime"
+                value="%DIM_END_TIME%"
+                class="time-input"
+                onchange="updateDimEndTime(this.value)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="toggle-container">
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="useDST"
+                onchange="updateUseDST(this.checked)"
+                %USE_DST_CHECKED%
+              />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="setting-label">Enable Daylight Saving Time</span>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">MQTT Configuration</label>
+          
+          <div class="nested-settings">
+            <div class="setting-group">
+              <label class="setting-label">Username</label>
+              <input
+                type="text"
+                id="mqttUsername"
+                class="text-input"
+                placeholder="Enter MQTT username"
+                onchange="updateMqttUsername(this.value)"
+                value="%MQTT_USERNAME%"
+              />
+            </div>
+            <div class="setting-group">
+              <label class="setting-label">Password</label>
+              <div class="input-group">
+                <input
+                  type="password"
+                  id="mqttPassword"
+                  class="text-input"
+                  placeholder="Enter MQTT password"
+                  onchange="updateMqttPassword(this.value)"
+                  value="%MQTT_PASSWORD%"
+                />
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility()"><img src="password_2_off.svg" alt="Toggle Password Visibility" width="16" height="16" /></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div>
-        <button onclick="detectLocation()">Detect Location</button>
-        <p id="locationStatus">%WEATHER_CITY%, %WEATHER_REGION%</p>
-        <div style="margin-left: 20px">
-            Latitude: <span id="latitude">%CURRENT_LAT%</span>
-            <br />
-            Longitude: <span id="longitude">%CURRENT_LON%</span>
-        </div>
-    </div>
-
-    <div>
-      Brightness:
-      <input
-        type="range"
-        min="0"
-        max="255"
-        value="%BRIGHTNESS_VALUE%"
-        id="brightnessSlider"
-        oninput="updateBrightness(this.value)"
-      />
-    </div>
-    <div>
-      Use 24-hour clock:
-      <input
-        type="checkbox"
-        id="clockFormat24"
-        onchange="updateClockFormat(this.checked)"
-        %CLOCK_24H_CHECKED%
-      />
-    </div>
-    <div>
-      Use Fahrenheit:
-      <input
-        type="checkbox"
-        id="tempFormatF"
-        onchange="updateTempFormat(this.checked)"
-        %TEMP_F_CHECKED%
-      />
-    </div>
-    <div id="dimAtTimeSettings">
-      <div id="dimAtTimeSetting">
-        Dim at night:
-        <input
-          type="checkbox"
-          id="dimAtTime"
-          onchange="updateDimAtTime(this.checked)"
-          %DIM_AT_TIME_CHECKED%
-        />
-      </div>
-      <div style="margin-left: 20px">
-        <div id="dimStartTimeSetting">
-          Start:
-          <input
-            type="time"
-            id="dimStartTime"
-            value="%DIM_START_TIME%"
-            onchange="updateDimStartTime(this.value)"
-          />
-        </div>
-        <div id="dimEndTimeSetting">
-          End:
-          <input
-            type="time"
-            id="dimEndTime"
-            value="%DIM_END_TIME%"
-            onchange="updateDimEndTime(this.value)"
-          />
-        </div>
-      </div>
-    </div>
-    <div id="useDST">
-      Enable Daylight Saving Time:
-      <input
-        type="checkbox"
-        id="useDST"
-        onchange="updateUseDST(this.checked)"
-        %USE_DST_CHECKED%
-      />
-    </div>
-    <div>
-      MQTT Username:
-      <input
-        type="text"
-        id="mqttUsername"
-        placeholder="Enter MQTT username"
-        onchange="updateMqttUsername(this.value)"
-        %MQTT_USERNAME%
-      />
-    </div>
-    <div>
-      MQTT Password:
-      <input
-        type="password"
-        id="mqttPassword"
-        placeholder="Enter MQTT password"
-        onchange="updateMqttPassword(this.value)"
-        %MQTT_PASSWORD%
-      />
-    </div>
     <script>
       function detectLocation() {
-        document.getElementById("locationStatus").textContent = "Detecting...";
+        document.getElementById("locationStatus").textContent = "Detecting location...";
         
-        // Use ESP32 proxy endpoint instead of direct external API call
         fetch("/detectLocation", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({}) // Empty body for proxy request
+          body: JSON.stringify({})
         })
         .then(res => res.json())
         .then(data => {
@@ -129,7 +419,7 @@
             const lon = data.longitude;
             const location = data.city && data.region ? `${data.city}, ${data.region}` : `${lat}, ${lon}`;
             
-            document.getElementById("locationStatus").textContent = `Detected: ${location}`;
+            document.getElementById("locationStatus").textContent = location;
             document.getElementById("latitude").textContent = lat;
             document.getElementById("longitude").textContent = lon;
             console.log("Location detected and saved to ESP32");
@@ -232,6 +522,19 @@
           },
           body: JSON.stringify({ password: password }),
         });
+      }
+
+      function togglePasswordVisibility() {
+        const passwordField = document.getElementById("mqttPassword");
+        const toggleButton = passwordField.nextElementSibling;
+        
+        if (passwordField.type === "password") {
+          passwordField.type = "text";
+          toggleButton.innerHTML = '<img src="password_2_on.svg" alt="Toggle Password Visibility" width="16" height="16" />';
+        } else {
+          passwordField.type = "password";
+          toggleButton.innerHTML = '<img src="password_2_off.svg" alt="Toggle Password Visibility" width="16" height="16" />';
+        }
       }
     </script>
   </body>
