@@ -40,8 +40,8 @@ uint16_t touchScreenMinimumX = 200, touchScreenMaximumX = 3700, touchScreenMinim
 Preferences preferences;
 bool display_seven_day_forecast = true;
 String mqttServer = "";
-String mqttPassword = "cyd";
-String mqttUser = "cyd";
+String mqttPassword = "";
+String mqttUser = "";
 uint32_t brightness = 255;
 bool use_fahrenheit = true;
 float weather_latitude = 0;

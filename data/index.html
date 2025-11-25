@@ -81,13 +81,33 @@
         </div>
       </div>
     </div>
-    <div>
+    <div id="useDST">
       Enable Daylight Saving Time:
       <input
         type="checkbox"
         id="useDST"
         onchange="updateUseDST(this.checked)"
         %USE_DST_CHECKED%
+      />
+    </div>
+    <div>
+      MQTT Username:
+      <input
+        type="text"
+        id="mqttUsername"
+        placeholder="Enter MQTT username"
+        onchange="updateMqttUsername(this.value)"
+        %MQTT_USERNAME%
+      />
+    </div>
+    <div>
+      MQTT Password:
+      <input
+        type="password"
+        id="mqttPassword"
+        placeholder="Enter MQTT password"
+        onchange="updateMqttPassword(this.value)"
+        %MQTT_PASSWORD%
       />
     </div>
     <script>
@@ -191,6 +211,26 @@
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ enabled: isEnabled }),
+        });
+      }
+
+      function updateMqttUsername(username) {
+        fetch("/setMqttUsername", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username: username }),
+        });
+      }
+
+      function updateMqttPassword(password) {
+        fetch("/setMqttPassword", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ password: password }),
         });
       }
     </script>

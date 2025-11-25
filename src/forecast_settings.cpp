@@ -14,21 +14,21 @@
 
 void initializeSettingsScreen()
 {
-    Serial.println("Initializing settings screen...");
+  Serial.println("Initializing settings screen...");
 
-    String ipv4LabelText = "http://" + WiFi.localIP().toString();
-    String mdnsLabelText = "http://" + getDeviceIdentifier() + ".local";
+  String ipv4LabelText = "http://" + WiFi.localIP().toString();
+  String mdnsLabelText = "http://" + getDeviceIdentifier() + ".local";
 
-    lv_label_set_text(objects.ipv4_label, ipv4LabelText.c_str());
-    lv_label_set_text(objects.mdns_label, mdnsLabelText.c_str());
+  lv_label_set_text(objects.ipv4_label, ipv4LabelText.c_str());
+  lv_label_set_text(objects.mdns_label, mdnsLabelText.c_str());
 }
 
 AsyncWebServer server(80);
 
 struct TemplateEntry
 {
-    const char *key;
-    String (*handler)();
+  const char *key;
+  String (*handler)();
 };
 
 // Template handler functions
@@ -43,6 +43,8 @@ String getDimAtTime() { return dim_at_time ? "checked" : ""; }
 String getDimStartTime() { return dim_start_time; }
 String getDimEndTime() { return dim_end_time; }
 String getUseDST() { return use_dst ? "checked" : ""; }
+String getMqttUsername() { return mqttUser; }
+String getMqttPassword() { return mqttPassword; }
 
 // Static dispatch table
 static const TemplateEntry templateTable[] = {
@@ -57,59 +59,61 @@ static const TemplateEntry templateTable[] = {
     {"DIM_START_TIME", getDimStartTime},
     {"DIM_END_TIME", getDimEndTime},
     {"USE_DST_CHECKED", getUseDST},
+    {"MQTT_USERNAME", getMqttUsername},
+    {"MQTT_PASSWORD", getMqttPassword},
     {nullptr, nullptr} // Sentinel
 };
 
 String templateProcessor(const String &var)
 {
-    for (const auto &entry : templateTable)
+  for (const auto &entry : templateTable)
+  {
+    if (!entry.key)
+      break; // End of table
+    if (var.equals(entry.key))
     {
-        if (!entry.key)
-            break; // End of table
-        if (var.equals(entry.key))
-        {
-            return entry.handler();
-        }
+      return entry.handler();
     }
-    return String();
+  }
+  return String();
 };
 
 void setupWebserver()
 {
-    Serial.println("Setting up settings web server...");
-    
-    if (!LittleFS.begin(false))
-    {
-        Serial.println("LittleFS mount failed");
-        return;
-    }
-    else
-    {
-        Serial.println("LittleFS mounted successfully");
-        Serial.printf("Total: %d bytes, Used: %d bytes\n", LittleFS.totalBytes(), LittleFS.usedBytes());
-    }
+  Serial.println("Setting up settings web server...");
 
-    // Verify required files exist
-    if (!LittleFS.exists("/index.html"))
-    {
-        Serial.println("WARNING: /index.html not found");
-    }
+  if (!LittleFS.begin(false))
+  {
+    Serial.println("LittleFS mount failed");
+    return;
+  }
+  else
+  {
+    Serial.println("LittleFS mounted successfully");
+    Serial.printf("Total: %d bytes, Used: %d bytes\n", LittleFS.totalBytes(), LittleFS.usedBytes());
+  }
 
-    // Static files (index.html, etc.)
-    server.serveStatic("/", LittleFS, "/");
+  // Verify required files exist
+  if (!LittleFS.exists("/index.html"))
+  {
+    Serial.println("WARNING: /index.html not found");
+  }
 
-    // Serve templated HTML with current brightness value
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-              {
+  // Static files (index.html, etc.)
+  server.serveStatic("/", LittleFS, "/");
+
+  // Serve templated HTML with current brightness value
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
     if (LittleFS.exists("/index.html")) {
       request->send(LittleFS, "/index.html", "text/html", false, &templateProcessor);
     } else {
       request->send(404, "text/plain", "index.html not found");
     } });
 
-    // Handle brightness updates with POST
-    server.on("/setBrightness", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-              {
+  // Handle brightness updates with POST
+  server.on("/setBrightness", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
       JsonDocument doc;
       DeserializationError error = deserializeJson(doc, (const char*)data);
       
@@ -135,9 +139,9 @@ void setupWebserver()
       
       request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
-    // Handle location updates with POST
-    server.on("/setLocation", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-              {
+  // Handle location updates with POST
+  server.on("/setLocation", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
       JsonDocument doc;
       DeserializationError error = deserializeJson(doc, (const char*)data);
       
@@ -173,9 +177,9 @@ void setupWebserver()
       
       request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
-    // Handle clock format updates with POST
-    server.on("/setClockFormat", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-              {
+  // Handle clock format updates with POST
+  server.on("/setClockFormat", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, (const char*)data);
     
@@ -203,9 +207,9 @@ void setupWebserver()
     
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
-    // Handle temperature format updates with POST
-    server.on("/setTempFormat", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-              {
+  // Handle temperature format updates with POST
+  server.on("/setTempFormat", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, (const char*)data);
     
@@ -233,9 +237,9 @@ void setupWebserver()
     
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
-    // Handle dim at time setting with POST
-    server.on("/setDimAtTime", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-              {
+  // Handle dim at time setting with POST
+  server.on("/setDimAtTime", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, (const char*)data);
     
@@ -261,9 +265,9 @@ void setupWebserver()
     
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
-    // Handle dim start time setting with POST
-    server.on("/setDimStartTime", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-              {
+  // Handle dim start time setting with POST
+  server.on("/setDimStartTime", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, (const char*)data);
     
@@ -295,9 +299,9 @@ void setupWebserver()
     
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
-    // Handle dim end time setting with POST
-    server.on("/setDimEndTime", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-              {
+  // Handle dim end time setting with POST
+  server.on("/setDimEndTime", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, (const char*)data);
     
@@ -328,9 +332,9 @@ void setupWebserver()
     
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
-    // Handle DST setting with POST
-    server.on("/setUseDST", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-              {
+  // Handle DST setting with POST
+  server.on("/setUseDST", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, (const char*)data);
     if (error) {
@@ -353,12 +357,63 @@ void setupWebserver()
     preferences.putBool("use_dst", enabled);
     updateClock(nullptr);
     
-    request->send(200, "application/json", "{\"status\":\"ok\"}");               }
-    );
+    request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
-    // Handle IP-based location detection with POST
-    server.on("/detectLocation", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-              {
+  server.on("/setMqttUsername", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, (const char*)data);
+    if (error) {
+      Serial.print("JSON parse error: ");
+      Serial.println(error.c_str());
+      request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+      return;
+    }
+
+    if (!doc["username"].is<String>()) {
+      request->send(400, "application/json", "{\"error\":\"username and password must be string values\"}");
+      return;
+    }
+
+    String username = doc["username"].as<String>();
+
+    Serial.printf("Setting MQTT username: %s\n", username.c_str());
+
+    mqttUser = username;
+    preferences.putString("mqtt_user", username);
+    checkMqttConnection(nullptr);
+
+    request->send(200, "application/json", "{\"status\":\"ok\"}"); });
+
+  server.on("/setMqttPassword", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, (const char*)data);
+    if (error) {
+      Serial.print("JSON parse error: ");
+      Serial.println(error.c_str());
+      request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+      return;
+    }
+
+    if (!doc["password"].is<String>()) {
+      request->send(400, "application/json", "{\"error\":\"username and password must be string values\"}");
+      return;
+    }
+
+    String password = doc["password"].as<String>();
+
+    Serial.printf("Setting MQTT password.\n");
+
+    mqttPassword = password;
+    preferences.putString("mqtt_password", password);
+    checkMqttConnection(nullptr);
+
+    request->send(200, "application/json", "{\"status\":\"ok\"}"); });
+
+  // Handle IP-based location detection with POST
+  server.on("/detectLocation", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
     Serial.println("Detecting location via IP geolocation...");
     
     HTTPClient http;
@@ -439,6 +494,6 @@ void setupWebserver()
     
     http.end(); });
 
-    server.begin();
-    Serial.println("Web server started on port 80");
+  server.begin();
+  Serial.println("Web server started on port 80");
 }
