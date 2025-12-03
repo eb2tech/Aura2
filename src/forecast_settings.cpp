@@ -140,42 +140,42 @@ void setupWebserver()
       request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
   // Handle location updates with POST
-  server.on("/setLocation", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-            {
-      JsonDocument doc;
-      DeserializationError error = deserializeJson(doc, (const char*)data);
+  // server.on("/setLocation", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+  //           {
+  //     JsonDocument doc;
+  //     DeserializationError error = deserializeJson(doc, (const char*)data);
       
-      if (error) {
-        request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
-        return;
-      }
+  //     if (error) {
+  //       request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+  //       return;
+  //     }
       
-      if (!doc["latitude"].is<float>() || !doc["longitude"].is<float>()) {
-        request->send(400, "application/json", "{\"error\":\"Latitude and longitude must be float values\"}");
-        return;
-      }
+  //     if (!doc["latitude"].is<float>() || !doc["longitude"].is<float>()) {
+  //       request->send(400, "application/json", "{\"error\":\"Latitude and longitude must be float values\"}");
+  //       return;
+  //     }
 
-      float lat = doc["latitude"];
-      float lon = doc["longitude"];
+  //     float lat = doc["latitude"];
+  //     float lon = doc["longitude"];
       
-      // Validate coordinates
-      if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-        request->send(400, "application/json", "{\"error\":\"Invalid coordinates\"}");
-        return;
-      }
+  //     // Validate coordinates
+  //     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+  //       request->send(400, "application/json", "{\"error\":\"Invalid coordinates\"}");
+  //       return;
+  //     }
       
-      Serial.printf("Setting location to: %.6f, %.6f \n", lat, lon);
+  //     Serial.printf("Setting location to: %.6f, %.6f \n", lat, lon);
       
-      weather_latitude = lat;
-      weather_longitude = lon;
+  //     weather_latitude = lat;
+  //     weather_longitude = lon;
 
-      // Save to preferences
-      preferences.putFloat("weather_lat", lat);
-      preferences.putFloat("weather_lon", lon);
+  //     // Save to preferences
+  //     preferences.putFloat("weather_lat", lat);
+  //     preferences.putFloat("weather_lon", lon);
       
-      updateWeather(nullptr);
+  //     updateWeather(nullptr);
       
-      request->send(200, "application/json", "{\"status\":\"ok\"}"); });
+  //     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
   // Handle clock format updates with POST
   server.on("/setClockFormat", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
@@ -409,6 +409,74 @@ void setupWebserver()
     preferences.putString("mqtt_password", password);
     checkMqttConnection(nullptr);
 
+    request->send(200, "application/json", "{\"status\":\"ok\"}"); });
+
+  server.on("/setLocation", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, (const char*)data);
+    
+    if (error) {
+      request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+      return;
+    }
+    
+    if (!doc["latitude"].is<float>() || !doc["longitude"].is<float>()) {
+      request->send(400, "application/json", "{\"error\":\"Latitude and longitude must be float values\"}");
+      return;
+    }
+
+    float lat = doc["latitude"].as<float>();
+    float lon = doc["longitude"].as<float>();
+    
+    // Validate coordinates
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      request->send(400, "application/json", "{\"error\":\"Invalid coordinates\"}");
+      return;
+    }
+    
+    Serial.printf("Setting location to: %.6f, %.6f \n", lat, lon);
+    
+    weather_latitude = lat;
+    weather_longitude = lon;
+
+    // Save to preferences
+    preferences.putFloat("weather_lat", lat);
+    preferences.putFloat("weather_lon", lon);
+
+    Serial.println("Performing reverse geocoding...");
+    
+    HTTPClient http;
+    String url = String("https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=") + String(lat) + "&longitude=" + String(lon) + "&localityLanguage=en";
+    http.begin(url);
+    http.addHeader("User-Agent", "Aura-ESP32/1.0");
+    http.setTimeout(10000); // 10 second timeout
+
+    int httpResponseCode = http.GET();
+    if (httpResponseCode == 200) {
+      String payload = http.getString();
+      Serial.printf("Reverse geocode response: %s\n", payload.c_str());
+      
+      // Parse the response
+      JsonDocument geoDoc;
+      DeserializationError geoError = deserializeJson(geoDoc, payload);
+      if (!geoError) {
+        weather_city = geoDoc["city"] | weather_city;
+        weather_region = geoDoc["principalSubdivision"] | weather_region;
+        preferences.putString("weather_city", weather_city);
+        preferences.putString("weather_region", weather_region);
+
+        Serial.printf("Resolved location: %s, %s\n", weather_city.c_str(), weather_region.c_str());
+      } else {
+        Serial.printf("Reverse geocode JSON parse error: %s\n", geoError.c_str());
+      }
+    } else {
+      Serial.printf("Reverse geocode HTTP error: %d\n", httpResponseCode);
+    }
+    http.end();
+
+    updateWeather(nullptr);
+    
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
   // Handle IP-based location detection with POST
