@@ -56,6 +56,7 @@ bool dimModeActive = false;
 String time_zone = "America/Chicago";
 String utc_offset = "-0600";
 bool use_dst = true;
+bool use_mqtt = false;
 
 uint64_t getChipId()
 {
@@ -591,6 +592,7 @@ void setup()
   time_zone = preferences.getString("time_zone", time_zone);
   utc_offset = preferences.getString("utc_offset", utc_offset);
   use_dst = preferences.getBool("use_dst", use_dst);
+  use_mqtt = preferences.getBool("use_mqtt", use_mqtt);
 
   // Initialize LVGL
   lv_init();

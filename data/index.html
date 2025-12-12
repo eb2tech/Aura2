@@ -351,8 +351,8 @@
           </div>
 
           <div id="coordinates" class="coordinates">
-            Latitude: <span><input type="number" id="latitude" class="coordinates-input" value="%CURRENT_LAT%"
-                readonly step="0.000001" min="-90" max="90" /></span> /
+            Latitude: <span><input type="number" id="latitude" class="coordinates-input" value="%CURRENT_LAT%" readonly
+                step="0.000001" min="-90" max="90" /></span> /
             Longitude: <span><input type="number" id="longitude" class="coordinates-input" value="%CURRENT_LON%"
                 readonly step="0.000001" min="-180" max="180" /></span>
             <button id="updateLocation" type="button" class="location-set" disabled onclick="saveCoordinates()"><img
@@ -423,8 +423,13 @@
       </div>
 
       <div class="setting-group">
-        <label class="setting-label">MQTT Configuration</label>
-
+        <div class="toggle-container">
+          <label class="toggle-switch">
+            <input type="checkbox" id="useMQTT" onchange="updateUseMQTT(this.checked)" %USE_MQTT_CHECKED% />
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="setting-label">Use MQTT Configuration</span>
+        </div>
         <div class="nested-settings">
           <div class="setting-group">
             <label class="setting-label">Username</label>
@@ -443,6 +448,7 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
 
   <script>
@@ -549,6 +555,16 @@
 
     function updateUseDST(isEnabled) {
       fetch("/setUseDST", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ enabled: isEnabled }),
+      });
+    }
+
+    function updateUseMQTT(isEnabled) {
+      fetch("/setUseMQTT", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

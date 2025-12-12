@@ -20,5 +20,6 @@ extern String dim_end_time;
 extern String time_zone;
 extern String utc_offset;
 extern bool use_dst;
+extern bool use_mqtt;
 
 String getDeviceIdentifier();

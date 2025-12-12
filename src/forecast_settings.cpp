@@ -45,6 +45,7 @@ String getDimEndTime() { return dim_end_time; }
 String getUseDST() { return use_dst ? "checked" : ""; }
 String getMqttUsername() { return mqttUser; }
 String getMqttPassword() { return mqttPassword; }
+String getUseMQTT() { return use_mqtt ? "checked" : ""; }
 
 // Static dispatch table
 static const TemplateEntry templateTable[] = {
@@ -61,6 +62,7 @@ static const TemplateEntry templateTable[] = {
     {"USE_DST_CHECKED", getUseDST},
     {"MQTT_USERNAME", getMqttUsername},
     {"MQTT_PASSWORD", getMqttPassword},
+    {"USE_MQTT_CHECKED", getUseMQTT},
     {nullptr, nullptr} // Sentinel
 };
 
@@ -138,44 +140,6 @@ void setupWebserver()
       publishBacklightState();
       
       request->send(200, "application/json", "{\"status\":\"ok\"}"); });
-
-  // Handle location updates with POST
-  // server.on("/setLocation", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-  //           {
-  //     JsonDocument doc;
-  //     DeserializationError error = deserializeJson(doc, (const char*)data);
-      
-  //     if (error) {
-  //       request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
-  //       return;
-  //     }
-      
-  //     if (!doc["latitude"].is<float>() || !doc["longitude"].is<float>()) {
-  //       request->send(400, "application/json", "{\"error\":\"Latitude and longitude must be float values\"}");
-  //       return;
-  //     }
-
-  //     float lat = doc["latitude"];
-  //     float lon = doc["longitude"];
-      
-  //     // Validate coordinates
-  //     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-  //       request->send(400, "application/json", "{\"error\":\"Invalid coordinates\"}");
-  //       return;
-  //     }
-      
-  //     Serial.printf("Setting location to: %.6f, %.6f \n", lat, lon);
-      
-  //     weather_latitude = lat;
-  //     weather_longitude = lon;
-
-  //     // Save to preferences
-  //     preferences.putFloat("weather_lat", lat);
-  //     preferences.putFloat("weather_lon", lon);
-      
-  //     updateWeather(nullptr);
-      
-  //     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
   // Handle clock format updates with POST
   server.on("/setClockFormat", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
@@ -359,6 +323,34 @@ void setupWebserver()
     
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
+  // Handle MQTT setting with POST
+  server.on("/setUseMQTT", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, (const char*)data);
+    if (error) {
+      Serial.print("JSON parse error: ");
+      Serial.println(error.c_str());
+      request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+      return;
+    }
+    
+    if (!doc["enabled"].is<bool>()) {
+      request->send(400, "application/json", "{\"error\":\"enabled must be a boolean value\"}");
+      return;
+    }
+    
+    bool enabled = doc["enabled"];
+    
+    Serial.printf("Setting use MQTT to: %s\n", enabled ? "enabled" : "disabled");
+    
+    use_mqtt = enabled;
+    preferences.putBool("use_mqtt", enabled);
+    checkMqttConnection(nullptr);
+    
+    request->send(200, "application/json", "{\"status\":\"ok\"}"); });
+
+  // Handle MQTT username and password settings with POST
   server.on("/setMqttUsername", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
             {
     JsonDocument doc;
@@ -385,6 +377,7 @@ void setupWebserver()
 
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
+  // Handle MQTT username and password settings with POST
   server.on("/setMqttPassword", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
             {
     JsonDocument doc;
@@ -411,6 +404,7 @@ void setupWebserver()
 
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
+  // Handle location updates with POST
   server.on("/setLocation", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
             {
     JsonDocument doc;

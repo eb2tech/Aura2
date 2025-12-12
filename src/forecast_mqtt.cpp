@@ -60,6 +60,11 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
 
 bool discoverMqttBroker()
 {
+    if (!use_mqtt)
+    {
+        return false;
+    }
+    
     if (mqttServer != "")
     {
         Serial.println("MQTT server already configured: " + mqttServer);
@@ -83,9 +88,19 @@ bool discoverMqttBroker()
 
 void checkMqttConnection(lv_timer_t *timer)
 {
+    if (!use_mqtt)
+    {
+        return;
+    }
+
     if (!mqttClient.connected())
     {
         Serial.println("MQTT not connected, attempting to connect...");
+
+        if (!discoverMqttBroker())
+        {
+            return;
+        }
 
         mqttClient.setServer(mqttServer.c_str(), 1883);
         mqttClient.setCallback(mqttCallback);
