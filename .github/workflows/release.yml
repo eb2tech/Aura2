@@ -1,0 +1,56 @@
+name: PlatformIO Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers only when you push a tag like v1.0, v0.1.5, etc.
+
+# Permissions required to allow the action to create a Release in your repo
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio-release
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Build All Environments
+        run: pio run
+
+      # Renames 'firmware.bin' to 'firmware_envName.bin' to avoid conflicts
+      - name: Rename Firmware Binaries
+        run: |
+          for dir in .pio/build/*/; do
+            env_name=$(basename "$dir")
+            if [ -f "${dir}firmware.bin" ]; then
+              mv "${dir}firmware.bin" "${dir}firmware_${env_name}.bin"
+              echo "Renamed ${dir}firmware.bin to firmware_${env_name}.bin"
+            fi
+          done
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          # Uploads all renamed .bin files found in build folders
+          files: .pio/build/**/*.bin
+          generate_release_notes: true
