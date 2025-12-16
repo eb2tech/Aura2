@@ -554,9 +554,9 @@ void setup()
   tft.fillScreen(TFT_BLACK);
 
   #if defined(CYD_SETUP_TYPE) && CYD_SETUP_TYPE == 1
-  tft.setRotation(2);
-  #elif defined(CYD_SETUP_TYPE) && CYD_SETUP_TYPE == 2
   tft.setRotation(1);
+  #elif defined(CYD_SETUP_TYPE) && CYD_SETUP_TYPE == 2
+  tft.setRotation(2);
   #else
   #error "CYD_SETUP_TYPE not defined." // This is to force user to define CYD_SETUP_TYPE in platformio.ini and build for the correct setup
   #endif
