@@ -140,25 +140,19 @@ void loggerTask(void *parameter)
 
 void setupLogging()
 {
-  // logQueue = xQueueCreate(LOG_QUEUE_LENGTH, LOG_LINE_MAX);
+  logQueue = xQueueCreate(LogQueueLength, LogLineMax);
 
-  // QueueLogPrint *queuePrinter = new QueueLogPrint(logQueue);
-  // Log.begin(LOG_LEVEL_VERBOSE, queuePrinter);
+  QueueLogPrint *queuePrinter = new QueueLogPrint(logQueue);
+  Log.begin(LOG_LEVEL_VERBOSE, queuePrinter);
 
-  // Log.setPrefix([](Print *_logOutput, int logLevel)
-  //               {
-  //       _logOutput->print(millis());
-  //       _logOutput->print(" "); });
-
-  // xTaskCreatePinnedToCore(
-  //     loggerTask,
-  //     "LoggerTask",
-  //     4096,
-  //     nullptr,
-  //     1,
-  //     nullptr,
-  //     1);
-  Log.begin(LOG_LEVEL_VERBOSE, &Serial);
+  xTaskCreatePinnedToCore(
+      loggerTask,
+      "LoggerTask",
+      4096,
+      nullptr,
+      1,
+      nullptr,
+      1);
 }
 
 uint64_t getChipId()
@@ -254,7 +248,7 @@ void updateClock(lv_timer_t *timer)
   // Adjust for daylight saving time if enabled
   if (use_dst) {
     timeinfo.tm_hour += 1; // Add one hour for DST
-    Serial.println("Daylight saving time is active - adding 1 hour");
+    Log.infoln("Daylight saving time is active - adding 1 hour");
   }
 
   if (show_24hour_clock)
@@ -277,7 +271,7 @@ void updateClock(lv_timer_t *timer)
 void logPrint(lv_log_level_t level, const char *buf)
 {
   LV_UNUSED(level);
-  Serial.println(buf);
+  Log.infoln(buf);
   Serial.flush();
 }
 
@@ -317,7 +311,7 @@ void touchpadRead(lv_indev_t *indev, lv_indev_data_t *data)
     Serial.print("Touch x ");
     Serial.print(data->point.x);
     Serial.print(" y ");
-    Serial.println(data->point.y);
+    Log.infoln(data->point.y);
   }
   else
   {
@@ -330,7 +324,7 @@ bool saveConfigCalledShouldReboot = false;
 
 void saveConfigCallback()
 {
-  Serial.println("***** saveConfigCallback called *****");
+  Log.infoln("***** saveConfigCallback called *****");
   saveConfigCalledShouldReboot = true;
 }
 
@@ -340,11 +334,12 @@ bool isWiFiConfigValid()
   // Check if SSID is stored
   if (!wifiManager.getWiFiIsSaved())
   {
-    Serial.println("No saved WiFi credentials");
+    Log.infoln("No saved WiFi credentials");
     return false;
   }
 
-  Serial.println("Testing WiFi connection to: " + WiFi.SSID());
+ Serial.println("Testing WiFi connection to: " + WiFi.SSID());
+ Log.infoln("Testing WiFi connection to: " + WiFi.SSID());
 
   // Try to connect with timeout
   WiFi.begin(); // Use saved credentials
@@ -362,11 +357,11 @@ bool isWiFiConfigValid()
   bool connected = (WiFi.status() == WL_CONNECTED);
   if (connected)
   {
-    Serial.println("WiFi connection test successful");
+    Log.infoln("WiFi connection test successful");
   }
   else
   {
-    Serial.println("WiFi connection test failed - status: " + String(WiFi.status()));
+    Log.infoln("WiFi connection test failed - status: " + String(WiFi.status()));
   }
 
   return connected;
@@ -375,7 +370,7 @@ bool isWiFiConfigValid()
 void showWiFiSplashScreen()
 {
   auto rotation = tft.getRotation();
-  Serial.println("Display rotation: " + String(rotation));
+  Log.infoln("Display rotation: " + String(rotation));
 
   //tft.setRotation(1); // Landscape
 
@@ -463,25 +458,25 @@ void updateWiFiSplashStatus(const String &status, uint16_t color = TFT_GREEN)
 void onWiFiManagerAPStarted(WiFiManager *wifiManager)
 {
   updateWiFiSplashStatus("Hotspot ready. Connect now", TFT_YELLOW);
-  Serial.println("AP Mode started");
+  Log.infoln("AP Mode started");
 }
 
 void onWiFiManagerConnected()
 {
   updateWiFiSplashStatus("WiFi connected. Loading...", TFT_GREEN);
-  Serial.println("WiFi connected via WiFiManager");
+  Log.infoln("WiFi connected via WiFiManager");
 }
 
 void setupWifi()
 {
-  Serial.println("Connecting to WiFi...");
+  Log.infoln("Connecting to WiFi...");
 
   // Check if already connected
   if (WiFi.status() == WL_CONNECTED)
   {
-    Serial.println("Already connected to WiFi");
+    Log.infoln("Already connected to WiFi");
     Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
+    Log.infoln(WiFi.localIP());
     return;
   }
 
@@ -502,7 +497,7 @@ void setupWifi()
   if (!wifiManager.autoConnect(getDeviceIdentifier().c_str()))
   {
     updateWiFiSplashStatus("WiFi setup timeout...", TFT_RED);
-    Serial.println("Failed to connect and hit timeout");
+    Log.infoln("Failed to connect and hit timeout");
     delay(3000);
     // Reset and try again
     ESP.restart();
@@ -511,21 +506,21 @@ void setupWifi()
   {
     // Connected successfully
     updateWiFiSplashStatus("WiFi connected successfully...", TFT_GREEN);
-    Serial.println("WiFi connected");
+    Log.infoln("WiFi connected");
     Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
+    Log.infoln(WiFi.localIP());
     delay(2000); // Show success message briefly
   }
 
   if (saveConfigCalledShouldReboot)
   {
     updateWiFiSplashStatus("Rebooting to apply config...", TFT_YELLOW);
-    Serial.println("Rebooting to apply new configuration...");
+    Log.infoln("Rebooting to apply new configuration...");
     delay(2000);
     ESP.restart();
   }
 
-  Serial.println("Connected to WiFi: " + WiFi.localIP().toString());
+  Log.infoln("Connected to WiFi: " + WiFi.localIP().toString());
 }
 
 void setupUi()
@@ -590,14 +585,14 @@ void setupClock()
   // Convert to seconds for configTime()
   long offsetSeconds = (offsetHours * 3600) + (offsetMinutes * 60);
   
-  Serial.println("Setting up NTP with timezone: " + time_zone);
-  Serial.println("UTC offset: " + utc_offset + (use_dst ? " (DST active)" : " (Standard time)"));
-  Serial.println("Effective offset: " + String(offsetSeconds) + " seconds");
+  Log.infoln("Setting up NTP with timezone: " + time_zone);
+  Log.infoln("UTC offset: " + utc_offset + (use_dst ? " (DST active)" : " (Standard time)"));
+  Log.infoln("Effective offset: " + String(offsetSeconds) + " seconds");
   
   // Initialize NTP time synchronization with offset
   configTime(offsetSeconds, 0, "pool.ntp.org", "time.nist.gov");
 
-  Serial.println("Initializing NTP time synchronization");
+  Log.infoln("Initializing NTP time synchronization");
 
   // Wait for time to be set
   struct tm timeinfo;
@@ -605,19 +600,19 @@ void setupClock()
   const int retry_count = 10;
   while (!getLocalTime(&timeinfo) && retry < retry_count)
   {
-    Serial.println("Failed to obtain time, retrying");
+    Log.infoln("Failed to obtain time, retrying");
     delay(2000);
     retry++;
   }
 
   if (retry < retry_count)
   {
-    Serial.println("Time synchronized successfully");
-    Serial.println(&timeinfo, "Current time: %A, %B %d %Y %H:%M:%S");
+    Log.infoln("Time synchronized successfully");
+    Log.infoln(&timeinfo, "Current time: %A, %B %d %Y %H:%M:%S");
   }
   else
   {
-    Serial.println("Failed to synchronize time after retries");
+    Log.infoln("Failed to synchronize time after retries");
   }
 
   updateClock(NULL); // Initial clock update
@@ -625,13 +620,13 @@ void setupClock()
 
 void setupMdns()
 {
-  Serial.println("Setting up mDNS responder...");
+  Log.infoln("Setting up mDNS responder...");
   while (!MDNS.begin(getDeviceIdentifier().c_str()))
   {
-    Serial.println("Error setting up MDNS responder...");
+    Log.infoln("Error setting up MDNS responder...");
     delay(1000);
   }
-  Serial.println("mDNS responder started");
+  Log.infoln("mDNS responder started");
 
   MDNS.addService("http", "tcp", 80);
   MDNS.enableArduino();
@@ -724,9 +719,9 @@ void setup()
   setupClock();
   setupWebserver();
 
-  Serial.println("UI initialized and ready");
+  Log.infoln("UI initialized and ready");
 
-  Serial.println("Setup complete");
+  Log.infoln("Setup complete");
 }
 
 void loop()

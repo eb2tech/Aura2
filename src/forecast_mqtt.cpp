@@ -41,7 +41,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
             analogWrite(LCD_BACKLIGHT_PIN, brightness);
             preferences.putUInt("brightness", brightness);
 
-            Serial.println("Backlight turned ON via MQTT");
+            Log.infoln("Backlight turned ON via MQTT");
             publishBacklightState();
         }
         else if (state == "OFF")
@@ -49,7 +49,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
             brightness = 0;
             analogWrite(LCD_BACKLIGHT_PIN, 0);
             preferences.putUInt("brightness", brightness);
-            Serial.println("Backlight turned OFF via MQTT");
+            Log.infoln("Backlight turned OFF via MQTT");
             publishBacklightState();
         }
     }
@@ -241,7 +241,7 @@ void publishHomeAssistantDiscovery()
     }
 
     discoveryPublished = true;
-    Serial.println("Home Assistant discovery messages published");
+    Log.infoln("Home Assistant discovery messages published");
 }
 
 void publishSensorState()

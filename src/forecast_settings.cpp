@@ -82,7 +82,7 @@ String templateProcessor(const String &var)
 
 void setupWebserver()
 {
-  Serial.println("Setting up settings web server...");
+  Log.infoln("Setting up settings web server...");
 
   if (!LittleFS.begin(false))
   {
@@ -442,7 +442,7 @@ void setupWebserver()
     preferences.putFloat("weather_lat", lat);
     preferences.putFloat("weather_lon", lon);
 
-    Serial.println("Performing reverse geocoding...");
+    Log.infoln("Performing reverse geocoding...");
     
     HTTPClient http;
     String url = String("https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=") + String(lat) + "&longitude=" + String(lon) + "&localityLanguage=en";
