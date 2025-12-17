@@ -7,6 +7,7 @@
 #include <Preferences.h>
 #include <WiFiManager.h>
 #include <ESPmDNS.h>
+#include <ArduinoLog.h>
 #include "ui/ui.h"
 #include "forecast_weather.h"
 #include "forecast_widgets.h"
@@ -57,6 +58,108 @@ String time_zone = "America/Chicago";
 String utc_offset = "-0600";
 bool use_dst = true;
 bool use_mqtt = false;
+
+// Logging configuration
+static const int LogLineMax = 128;
+static const int LogQueueLength = 50;
+QueueHandle_t logQueue;
+
+class QueueLogPrint : public Print
+{
+public:
+  QueueLogPrint(QueueHandle_t q) : queue(q)
+  {
+    buffer[0] = '\0';
+    index = 0;
+  }
+
+  virtual size_t write(uint8_t ch) override
+  {
+    if (ch == '\r')
+    {
+      // ignore CR, handle LF only
+      return 1;
+    }
+
+    if (ch == '\n' || index >= LogLineMax - 1)
+    {
+      buffer[index] = '\0';
+      enqueueLine(buffer);
+      index = 0;
+    }
+    else
+    {
+      buffer[index++] = static_cast<char>(ch);
+    }
+    return 1;
+  }
+
+  virtual size_t write(const uint8_t *buf, size_t size) override
+  {
+    size_t n = 0;
+    while (n < size)
+    {
+      write(buf[n++]);
+    }
+    return size;
+  }
+
+private:
+  void enqueueLine(const char *line)
+  {
+    char tmp[LogLineMax];
+    snprintf(tmp, LogLineMax, "%s\n", line); // re-add newline
+
+    // Non-blocking send (drop if full)
+    xQueueSend(queue, tmp, 0);
+  }
+
+  QueueHandle_t queue;
+  char buffer[LogLineMax];
+  size_t index;
+};
+
+void loggerTask(void *parameter)
+{
+  // Prepare to connect to Azure Function
+
+  char line[LogLineMax];
+
+  while (true)
+  {
+    if (xQueueReceive(logQueue, line, portMAX_DELAY))
+    {
+      // Write to Serial
+      Serial.print(line);
+
+      // POST to Function
+      // TODO
+    }
+  }
+}
+
+void setupLogging()
+{
+  // logQueue = xQueueCreate(LOG_QUEUE_LENGTH, LOG_LINE_MAX);
+
+  // QueueLogPrint *queuePrinter = new QueueLogPrint(logQueue);
+  // Log.begin(LOG_LEVEL_VERBOSE, queuePrinter);
+
+  // Log.setPrefix([](Print *_logOutput, int logLevel)
+  //               {
+  //       _logOutput->print(millis());
+  //       _logOutput->print(" "); });
+
+  // xTaskCreatePinnedToCore(
+  //     loggerTask,
+  //     "LoggerTask",
+  //     4096,
+  //     nullptr,
+  //     1,
+  //     nullptr,
+  //     1);
+  Log.begin(LOG_LEVEL_VERBOSE, &Serial);
+}
 
 uint64_t getChipId()
 {
@@ -613,6 +716,7 @@ void setup()
   lv_indev_set_read_cb(indev_touchpad, touchpadRead);
 
   // Set up everything else
+  setupLogging();
   setupWifi();
   setupMdns();
   setupMqtt();

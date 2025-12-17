@@ -3,6 +3,7 @@
 #include <LittleFS.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <ArduinoLog.h>
 #include "ui/ui.h"
 #include "forecast_preferences.h"
 #include "forecast_settings.h"
@@ -14,8 +15,7 @@
 
 void initializeSettingsScreen()
 {
-  Serial.println("Initializing settings screen...");
-
+  Log.infoln("Initializing settings screen...");
   String ipv4LabelText = "http://" + WiFi.localIP().toString();
   String mdnsLabelText = "http://" + getDeviceIdentifier() + ".local";
 
@@ -86,19 +86,19 @@ void setupWebserver()
 
   if (!LittleFS.begin(false))
   {
-    Serial.println("LittleFS mount failed");
+    Log.errorln("LittleFS mount failed");
     return;
   }
   else
   {
-    Serial.println("LittleFS mounted successfully");
-    Serial.printf("Total: %d bytes, Used: %d bytes\n", LittleFS.totalBytes(), LittleFS.usedBytes());
+    Log.infoln("LittleFS mounted successfully");
+    Log.infoln("Total: %d bytes, Used: %d bytes", LittleFS.totalBytes(), LittleFS.usedBytes());
   }
 
   // Verify required files exist
   if (!LittleFS.exists("/index.html"))
   {
-    Serial.println("WARNING: /index.html not found");
+    Log.warningln("WARNING: /index.html not found");
   }
 
   // Static files (index.html, etc.)
@@ -120,8 +120,8 @@ void setupWebserver()
       DeserializationError error = deserializeJson(doc, (const char*)data);
       
       if (error) {
-        Serial.print("JSON parse error: ");
-        Serial.println(error.c_str());
+        Log.error("JSON parse error: ");
+        Log.errorln(error.c_str());
         request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
         return;
       }
@@ -148,8 +148,8 @@ void setupWebserver()
     DeserializationError error = deserializeJson(doc, (const char*)data);
     
     if (error) {
-      Serial.print("JSON parse error: ");
-      Serial.println(error.c_str());
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
       request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
       return;
     }
@@ -161,7 +161,7 @@ void setupWebserver()
     
     bool format24 = doc["format24"];
     
-    Serial.printf("Setting clock format to: %s\n", format24 ? "24h" : "12h");
+    Log.infoln("Setting clock format to: %s", format24 ? "24h" : "12h");
     
     show_24hour_clock = format24;
     preferences.putBool("show_24hour", format24);
@@ -178,8 +178,8 @@ void setupWebserver()
     DeserializationError error = deserializeJson(doc, (const char*)data);
     
     if (error) {
-      Serial.print("JSON parse error: ");
-      Serial.println(error.c_str());
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
       request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
       return;
     }
@@ -191,7 +191,7 @@ void setupWebserver()
 
     bool useF = doc["useF"];
     
-    Serial.printf("Setting temperature format to: %s\n", useF ? "Fahrenheit" : "Celsius");
+    Log.infoln("Setting temperature format to: %s", useF ? "Fahrenheit" : "Celsius");
     
     use_fahrenheit = useF;
     preferences.putBool("use_fahrenheit", useF);
@@ -208,8 +208,8 @@ void setupWebserver()
     DeserializationError error = deserializeJson(doc, (const char*)data);
     
     if (error) {
-      Serial.print("JSON parse error: ");
-      Serial.println(error.c_str());
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
       request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
       return;
     }
@@ -221,7 +221,7 @@ void setupWebserver()
     
     bool enabled = doc["enabled"];
     
-    Serial.printf("Setting dim at time to: %s\n", enabled ? "enabled" : "disabled");
+    Log.infoln("Setting dim at time to: %s", enabled ? "enabled" : "disabled");
     
     dim_at_time = enabled;
     preferences.putBool("dim_at_time", enabled);
@@ -236,8 +236,8 @@ void setupWebserver()
     DeserializationError error = deserializeJson(doc, (const char*)data);
     
     if (error) {
-      Serial.print("JSON parse error: ");
-      Serial.println(error.c_str());
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
       request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
       return;
     }
@@ -255,7 +255,7 @@ void setupWebserver()
       return;
     }
     
-    Serial.printf("Setting dim start time to: %s\n", startTime.c_str());
+    Log.infoln("Setting dim start time to: %s", startTime.c_str());
     
     dim_start_time = startTime;
     preferences.putString("dim_start_time", startTime);
@@ -270,8 +270,8 @@ void setupWebserver()
     DeserializationError error = deserializeJson(doc, (const char*)data);
     
     if (error) {
-      Serial.print("JSON parse error: ");
-      Serial.println(error.c_str());
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
       request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
       return;
     }
@@ -289,7 +289,7 @@ void setupWebserver()
       return;
     }
     
-    Serial.printf("Setting dim end time to: %s\n", endTime.c_str());
+    Log.infoln("Setting dim end time to: %s", endTime.c_str());
     
     dim_end_time = endTime;
     preferences.putString("dim_end_time", endTime);
@@ -302,8 +302,8 @@ void setupWebserver()
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, (const char*)data);
     if (error) {
-      Serial.print("JSON parse error: ");
-      Serial.println(error.c_str());
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
       request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
       return;
     }
@@ -315,7 +315,7 @@ void setupWebserver()
     
     bool enabled = doc["enabled"];
     
-    Serial.printf("Setting use DST to: %s\n", enabled ? "enabled" : "disabled");
+    Log.infoln("Setting use DST to: %s", enabled ? "enabled" : "disabled");
     
     use_dst = enabled;
     preferences.putBool("use_dst", enabled);
@@ -329,8 +329,8 @@ void setupWebserver()
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, (const char*)data);
     if (error) {
-      Serial.print("JSON parse error: ");
-      Serial.println(error.c_str());
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
       request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
       return;
     }
@@ -342,7 +342,7 @@ void setupWebserver()
     
     bool enabled = doc["enabled"];
     
-    Serial.printf("Setting use MQTT to: %s\n", enabled ? "enabled" : "disabled");
+    Log.infoln("Setting use MQTT to: %s", enabled ? "enabled" : "disabled");
     
     use_mqtt = enabled;
     preferences.putBool("use_mqtt", enabled);
@@ -356,8 +356,8 @@ void setupWebserver()
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, (const char*)data);
     if (error) {
-      Serial.print("JSON parse error: ");
-      Serial.println(error.c_str());
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
       request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
       return;
     }
@@ -369,7 +369,7 @@ void setupWebserver()
 
     String username = doc["username"].as<String>();
 
-    Serial.printf("Setting MQTT username: %s\n", username.c_str());
+    Log.infoln("Setting MQTT username: %s", username.c_str());
 
     mqttUser = username;
     preferences.putString("mqtt_user", username);
@@ -383,8 +383,8 @@ void setupWebserver()
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, (const char*)data);
     if (error) {
-      Serial.print("JSON parse error: ");
-      Serial.println(error.c_str());
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
       request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
       return;
     }
@@ -396,7 +396,7 @@ void setupWebserver()
 
     String password = doc["password"].as<String>();
 
-    Serial.printf("Setting MQTT password.\n");
+    Log.infoln("Setting MQTT password.");
 
     mqttPassword = password;
     preferences.putString("mqtt_password", password);
@@ -411,11 +411,14 @@ void setupWebserver()
     DeserializationError error = deserializeJson(doc, (const char*)data);
     
     if (error) {
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
       request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
       return;
     }
     
     if (!doc["latitude"].is<float>() || !doc["longitude"].is<float>()) {
+      Log.errorln("Latitude and longitude must be float values");
       request->send(400, "application/json", "{\"error\":\"Latitude and longitude must be float values\"}");
       return;
     }
@@ -425,11 +428,12 @@ void setupWebserver()
     
     // Validate coordinates
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      Log.errorln("Invalid coordinates");
       request->send(400, "application/json", "{\"error\":\"Invalid coordinates\"}");
       return;
     }
     
-    Serial.printf("Setting location to: %.6f, %.6f \n", lat, lon);
+    Log.infoln("Setting location to: %.6f, %.6f", lat, lon);
     
     weather_latitude = lat;
     weather_longitude = lon;
@@ -449,7 +453,7 @@ void setupWebserver()
     int httpResponseCode = http.GET();
     if (httpResponseCode == 200) {
       String payload = http.getString();
-      Serial.printf("Reverse geocode response: %s\n", payload.c_str());
+      Log.infoln("Reverse geocode response: %s", payload.c_str());
       
       // Parse the response
       JsonDocument geoDoc;
@@ -460,12 +464,14 @@ void setupWebserver()
         preferences.putString("weather_city", weather_city);
         preferences.putString("weather_region", weather_region);
 
-        Serial.printf("Resolved location: %s, %s\n", weather_city.c_str(), weather_region.c_str());
+        Log.infoln("Resolved location: %s, %s", weather_city.c_str(), weather_region.c_str());
       } else {
-        Serial.printf("Reverse geocode JSON parse error: %s\n", geoError.c_str());
+        Log.error("Reverse geocode JSON parse error: ");
+        Log.errorln(geoError.c_str());
       }
     } else {
-      Serial.printf("Reverse geocode HTTP error: %d\n", httpResponseCode);
+      Log.error("Reverse geocode HTTP error: ");
+      Log.errorln(String(httpResponseCode).c_str());
     }
     http.end();
 
@@ -476,7 +482,7 @@ void setupWebserver()
   // Handle IP-based location detection with POST
   server.on("/detectLocation", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
             {
-    Serial.println("Detecting location via IP geolocation...");
+    Log.infoln("Detecting location via IP geolocation...");
     
     HTTPClient http;
     http.begin("https://ipapi.co/json/");
@@ -487,7 +493,7 @@ void setupWebserver()
     
     if (httpResponseCode == 200) {
       String payload = http.getString();
-      Serial.printf("Geolocation response: %s\n", payload.c_str());
+      Log.infoln("Geolocation response: %s", payload.c_str());
       
       // Parse the response
       JsonDocument doc;
@@ -542,12 +548,12 @@ void setupWebserver()
         request->send(500, "application/json", "{\"error\":\"Failed to parse location data\"}");
       }
     } else {
-      Serial.printf("HTTP error: %d\n", httpResponseCode);
+      Log.errorln("HTTP error: %d", httpResponseCode);
       
       // Check for redirect response
       if (httpResponseCode == 301 || httpResponseCode == 302) {
         String location = http.getLocation();
-        Serial.printf("Redirect to: %s\n", location.c_str());
+        Log.infoln("Redirect to: %s", location.c_str());
         request->send(500, "application/json", "{\"error\":\"Service moved - please update firmware\"}");
       } else {
         request->send(500, "application/json", "{\"error\":\"Geolocation service unavailable\"}");
@@ -557,5 +563,5 @@ void setupWebserver()
     http.end(); });
 
   server.begin();
-  Serial.println("Web server started on port 80");
+  Log.infoln("Web server started on port 80");
 }

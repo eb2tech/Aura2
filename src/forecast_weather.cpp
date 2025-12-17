@@ -1,6 +1,7 @@
 #include <lvgl.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <ArduinoLog.h>
 #include "text_strings.h"
 #include "forecast_weather.h"
 #include "forecast_widgets.h"
@@ -274,7 +275,7 @@ void updateWeather(lv_timer_t *timer)
 
     if (http.GET() == HTTP_CODE_OK)
     {
-        Serial.println("Updated weather from open-meteo: " + url);
+        Log.infoln("Updated weather from open-meteo: %s", url.c_str());
 
         String payload = http.getString();
         JsonDocument doc;
@@ -372,12 +373,12 @@ void updateWeather(lv_timer_t *timer)
         }
         else
         {
-            Serial.println("JSON parse failed on result from " + url);
+            Log.errorln("JSON parse failed on result from %s", url.c_str());
         }
     }
     else
     {
-        Serial.println("HTTP GET failed at " + url);
+        Log.errorln("HTTP GET failed at %s", url.c_str());
     }
     http.end();
 

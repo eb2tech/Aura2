@@ -3,6 +3,7 @@
 #include <PubSubClient.h>
 #include <ESPmDNS.h>
 #include <ArduinoJson.h>
+#include <ArduinoLog.h>
 #include "forecast_mqtt.h"
 #include "forecast_preferences.h"
 #include "forecast_weather.h"
@@ -22,10 +23,8 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     String deviceId = getDeviceIdentifier();
     JsonDocument doc;
 
-    Serial.print("Message arrived: ");
-    Serial.print(message.c_str());
-    Serial.print(" on topic: ");
-    Serial.println(topic);
+    Log.infoln("Message arrived: %s", message.c_str());
+    Log.infoln(" on topic: %s", topic);
 
     deserializeJson(doc, (char *)payload, length);
 
@@ -67,21 +66,21 @@ bool discoverMqttBroker()
     
     if (mqttServer != "")
     {
-        Serial.println("MQTT server already configured: " + mqttServer);
+        Log.infoln("MQTT server already configured: %s", mqttServer.c_str());
         return true;
     }
 
-    Serial.println("Discovering MQTT broker via mDNS...");
+    Log.infoln("Discovering MQTT broker via mDNS...");
     int n = MDNS.queryService("mqtt", "tcp");
     if (n == 0)
     {
-        Serial.println("No MQTT broker found via mDNS");
+        Log.infoln("No MQTT broker found via mDNS");
         return false;
     }
     else
     {
         mqttServer = MDNS.IP(0).toString();
-        Serial.println("Discovered MQTT broker: " + MDNS.hostname(0) + " at "  + mqttServer);
+        Log.infoln("Discovered MQTT broker: %s at %s", MDNS.hostname(0).c_str(), mqttServer.c_str());
         return true;
     }
 }
@@ -95,7 +94,7 @@ void checkMqttConnection(lv_timer_t *timer)
 
     if (!mqttClient.connected())
     {
-        Serial.println("MQTT not connected, attempting to connect...");
+        Log.infoln("MQTT not connected, attempting to connect...");
 
         if (!discoverMqttBroker())
         {
@@ -105,13 +104,13 @@ void checkMqttConnection(lv_timer_t *timer)
         mqttClient.setServer(mqttServer.c_str(), 1883);
         mqttClient.setCallback(mqttCallback);
 
-        Serial.println("MQTT client configured to connect to: " + mqttServer);
+        Log.infoln("MQTT client configured to connect to: %s", mqttServer.c_str());
 
         try
         {
             if (mqttClient.connect(getDeviceIdentifier().c_str(), mqttUser.c_str(), mqttPassword.c_str()))
             {
-                Serial.println("MQTT connected successfully");
+                Log.infoln("MQTT connected successfully");
                 mqttConnected = true;
 
                 // Publish Home Assistant discovery messages
@@ -119,23 +118,20 @@ void checkMqttConnection(lv_timer_t *timer)
             }
             else
             {
-                Serial.print("MQTT connection failed, rc=");
-                Serial.print(mqttClient.state());
-                Serial.println(" trying again later");
+                Log.errorln("MQTT connection failed, rc=%d", mqttClient.state());
                 mqttConnected = false;
                 discoveryPublished = false; // Reset discovery flag on disconnect
             }
         }
         catch (const std::exception &e)
         {
-            Serial.print("MQTT connection exception: ");
-            Serial.println(e.what());
+            Log.errorln("MQTT connection exception: %s", e.what());
             mqttConnected = false;
             discoveryPublished = false;
         }
         catch (...)
         {
-            Serial.println("MQTT connection failed with unknown exception");
+            Log.errorln("MQTT connection failed with unknown exception");
             mqttConnected = false;
             discoveryPublished = false;
         }
@@ -211,7 +207,7 @@ void publishHomeAssistantDiscovery()
 
     if (tempPublishResult && feelsLikePublishResult)
     {
-        Serial.println("Published Aura2 discovery");
+        Log.infoln("Published Aura2 discovery");
 
         // Publish initial sensor states
         publishSensorState();
@@ -234,7 +230,7 @@ void publishHomeAssistantDiscovery()
 
     if (mqttClient.publish(backlightConfigTopic.c_str(), backlightConfigPayload.c_str(), true))
     {
-        Serial.println("Published backlight discovery");
+        Log.infoln("Published backlight discovery");
 
         // Subscribe to backlight command topics
         String backlightSetTopic = "aura/" + deviceId + "/backlight/set";
