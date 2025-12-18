@@ -311,7 +311,7 @@ void touchpadRead(lv_indev_t *indev, lv_indev_data_t *data)
     Serial.print("Touch x ");
     Serial.print(data->point.x);
     Serial.print(" y ");
-    Log.infoln(data->point.y);
+    Serial.println(data->point.y);
   }
   else
   {
@@ -339,7 +339,7 @@ bool isWiFiConfigValid()
   }
 
  Serial.println("Testing WiFi connection to: " + WiFi.SSID());
- Log.infoln("Testing WiFi connection to: " + WiFi.SSID());
+ Log.infoln("Testing WiFi connection to: %s", WiFi.SSID().c_str());
 
   // Try to connect with timeout
   WiFi.begin(); // Use saved credentials
@@ -361,7 +361,7 @@ bool isWiFiConfigValid()
   }
   else
   {
-    Log.infoln("WiFi connection test failed - status: " + String(WiFi.status()));
+    Log.infoln("WiFi connection test failed - status: %s", String(WiFi.status()).c_str());
   }
 
   return connected;
@@ -370,7 +370,7 @@ bool isWiFiConfigValid()
 void showWiFiSplashScreen()
 {
   auto rotation = tft.getRotation();
-  Log.infoln("Display rotation: " + String(rotation));
+  Log.infoln("Display rotation: %d", rotation);
 
   //tft.setRotation(1); // Landscape
 
@@ -507,8 +507,7 @@ void setupWifi()
     // Connected successfully
     updateWiFiSplashStatus("WiFi connected successfully...", TFT_GREEN);
     Log.infoln("WiFi connected");
-    Serial.print("IP address: ");
-    Log.infoln(WiFi.localIP());
+    Log.info("IP address: $s", WiFi.localIP().toString().c_str());
     delay(2000); // Show success message briefly
   }
 
@@ -520,7 +519,7 @@ void setupWifi()
     ESP.restart();
   }
 
-  Log.infoln("Connected to WiFi: " + WiFi.localIP().toString());
+  Log.infoln("Connected to WiFi: %s", WiFi.localIP().toString().c_str());
 }
 
 void setupUi()
@@ -585,9 +584,9 @@ void setupClock()
   // Convert to seconds for configTime()
   long offsetSeconds = (offsetHours * 3600) + (offsetMinutes * 60);
   
-  Log.infoln("Setting up NTP with timezone: " + time_zone);
-  Log.infoln("UTC offset: " + utc_offset + (use_dst ? " (DST active)" : " (Standard time)"));
-  Log.infoln("Effective offset: " + String(offsetSeconds) + " seconds");
+  Log.infoln("Setting up NTP with timezone: %s", time_zone.c_str());
+  Log.infoln("UTC offset: %s%s", utc_offset.c_str(), use_dst ? " (DST active)" : " (Standard time)");
+  Log.infoln("Effective offset: %d seconds", offsetSeconds);
   
   // Initialize NTP time synchronization with offset
   configTime(offsetSeconds, 0, "pool.ntp.org", "time.nist.gov");
@@ -608,7 +607,9 @@ void setupClock()
   if (retry < retry_count)
   {
     Log.infoln("Time synchronized successfully");
-    Log.infoln(&timeinfo, "Current time: %A, %B %d %Y %H:%M:%S");
+    char buf[64];
+    strftime(buf, 64, "%c", &timeinfo);
+    Log.infoln("Current time: %s", buf);
   }
   else
   {
