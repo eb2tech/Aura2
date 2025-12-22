@@ -273,7 +273,9 @@ void updateWeather(lv_timer_t *timer)
     HTTPClient http;
     http.begin(url);
 
-    if (http.GET() == HTTP_CODE_OK)
+    Log.infoln("Fetching weather data for lat=%s, lon=%s", latitude.c_str(), longitude.c_str());
+    auto status = http.GET();
+    if (status == HTTP_CODE_OK)
     {
         Log.infoln("Updated weather from open-meteo: %s", url.c_str());
 
@@ -378,7 +380,7 @@ void updateWeather(lv_timer_t *timer)
     }
     else
     {
-        Log.errorln("HTTP GET failed at %s", url.c_str());
+        Log.errorln("HTTP GET failed at %s with status %d", url.substring(0, 50).c_str(), status);
     }
     http.end();
 

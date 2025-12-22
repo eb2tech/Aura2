@@ -335,6 +335,7 @@
       </h1>
     </div>
 
+    <!-- Detect Location -->
     <div class="content">
       <div class="setting-group location-section">
         <button class="detect-btn" onclick="detectLocation()"><img src="map_search.svg" alt="Map Icon" width="20"
@@ -361,6 +362,7 @@
         </div>
       </div>
 
+      <!-- Display Brightness -->
       <div class="setting-group">
         <label class="setting-label">Display Brightness</label>
         <div class="brightness-container">
@@ -369,6 +371,7 @@
         </div>
       </div>
 
+      <!-- Clock Format -->
       <div class="setting-group">
         <div class="toggle-container">
           <label class="toggle-switch">
@@ -379,6 +382,7 @@
         </div>
       </div>
 
+      <!-- Temperature Format -->
       <div class="setting-group">
         <div class="toggle-container">
           <label class="toggle-switch">
@@ -389,6 +393,7 @@
         </div>
       </div>
 
+      <!-- Dimming -->
       <div class="setting-group">
         <div class="toggle-container">
           <label class="toggle-switch">
@@ -412,6 +417,7 @@
         </div>
       </div>
 
+      <!-- Daylight Saving Time -->
       <div class="setting-group">
         <div class="toggle-container">
           <label class="toggle-switch">
@@ -422,6 +428,7 @@
         </div>
       </div>
 
+      <!-- MQTT Configuration -->
       <div class="setting-group">
         <div class="toggle-container">
           <label class="toggle-switch">
@@ -447,6 +454,39 @@
           </div>
         </div>
       </div>
+
+      <!-- NATS Configuration -->
+      <div class="setting-group">
+        <div class="toggle-container">
+          <label class="toggle-switch">
+            <input type="checkbox" id="useNATS" onchange="updateUseNATS(this.checked)" %USE_NATS_CHECKED% />
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="setting-label">Use NATS Configuration</span>
+        </div>
+        <div class="nested-settings">
+          <div class="setting-group">
+            <label class="setting-label">Server</label>
+            <input type="text" id="natsServer" class="text-input" placeholder="Enter NATS server"
+              onchange="updateNatsServer(this.value)" value="%NATS_SERVER%" />
+          </div>
+          <div class="setting-group">
+            <label class="setting-label">Username</label>
+            <input type="text" id="natsUsername" class="text-input" placeholder="Enter NATS username"
+              onchange="updateNatsUsername(this.value)" value="%NATS_USER%" />
+          </div>
+          <div class="setting-group">
+            <label class="setting-label">Password</label>
+            <div class="input-group">
+              <input type="password" id="natsPassword" class="text-input" placeholder="Enter NATS password"
+                onchange="updateNatsPassword(this.value)" value="%NATS_PASSWORD%" />
+              <button type="button" class="password-toggle" onclick="toggleNatsPasswordVisibility()"><img
+                  src="visibility.svg" alt="Toggle Password Visibility" width="16" height="16" /></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
   </div>
@@ -646,6 +686,59 @@
 
     function togglePasswordVisibility() {
       const passwordField = document.getElementById("mqttPassword");
+      const toggleButton = passwordField.nextElementSibling;
+
+      if (passwordField.type === "password") {
+        passwordField.type = "text";
+        toggleButton.innerHTML = '<img src="visibility_off.svg" alt="Toggle Password Visibility" width="16" height="16" />';
+      } else {
+        passwordField.type = "password";
+        toggleButton.innerHTML = '<img src="visibility.svg" alt="Toggle Password Visibility" width="16" height="16" />';
+      }
+    }
+    
+    function updateUseNATS(isEnabled) {
+      fetch("/setUseNATS", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ enabled: isEnabled }),
+      });
+    }
+
+    function updateNatsServer(server) {
+      fetch("/setNatsServer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ server: server }),
+      });
+    }
+
+    function updateNatsUsername(username) {
+      fetch("/setNatsUsername", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username: username }),
+      });
+    }
+
+    function updateNatsPassword(password) {
+      fetch("/setNatsPassword", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password: password }),
+      });
+    }
+
+    function toggleNatsPasswordVisibility() {
+      const passwordField = document.getElementById("natsPassword");
       const toggleButton = passwordField.nextElementSibling;
 
       if (passwordField.type === "password") {

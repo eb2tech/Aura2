@@ -10,8 +10,23 @@
 #include "forecast_weather.h"
 #include "forecast_widgets.h"
 #include "forecast_mqtt.h"
+#include "forecast_nats.h"
 
 #define LCD_BACKLIGHT_PIN 21
+
+struct SpiRamAllocator : ArduinoJson::Allocator {
+  void* allocate(size_t size) override {
+    return heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+  }
+
+  void deallocate(void* pointer) override {
+    heap_caps_free(pointer);
+  }
+
+  void* reallocate(void* ptr, size_t new_size) override {
+    return heap_caps_realloc(ptr, new_size, MALLOC_CAP_SPIRAM);
+  }
+};
 
 void initializeSettingsScreen()
 {
@@ -43,9 +58,13 @@ String getDimAtTime() { return dim_at_time ? "checked" : ""; }
 String getDimStartTime() { return dim_start_time; }
 String getDimEndTime() { return dim_end_time; }
 String getUseDST() { return use_dst ? "checked" : ""; }
+String getUseMQTT() { return use_mqtt ? "checked" : ""; }
 String getMqttUsername() { return mqttUser; }
 String getMqttPassword() { return mqttPassword; }
-String getUseMQTT() { return use_mqtt ? "checked" : ""; }
+String getUseNATS() { return use_nats ? "checked" : ""; }
+String getNatsServer() { return natsServer; }
+String getNatsUser() { return natsUser; }
+String getNatsPassword() { return natsPassword; }
 
 // Static dispatch table
 static const TemplateEntry templateTable[] = {
@@ -63,6 +82,10 @@ static const TemplateEntry templateTable[] = {
     {"MQTT_USERNAME", getMqttUsername},
     {"MQTT_PASSWORD", getMqttPassword},
     {"USE_MQTT_CHECKED", getUseMQTT},
+    {"NATS_SERVER", getNatsServer},
+    {"NATS_USER", getNatsUser},
+    {"NATS_PASSWORD", getNatsPassword},
+    {"USE_NATS_CHECKED", getUseNATS},
     {nullptr, nullptr} // Sentinel
 };
 
@@ -404,6 +427,113 @@ void setupWebserver()
 
     request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
+  // Handle NATS setting with POST
+  server.on("/setUseNATS", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, (const char*)data);
+    if (error) {
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
+      request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+      return;
+    }
+    
+    if (!doc["enabled"].is<bool>()) {
+      request->send(400, "application/json", "{\"error\":\"enabled must be a boolean value\"}");
+      return;
+    }
+    
+    bool enabled = doc["enabled"];
+    
+    Log.infoln("Setting use NATS to: %s", enabled ? "enabled" : "disabled");
+    
+    use_nats = enabled;
+    preferences.putBool("use_nats", enabled);
+    checkNatsConnection(nullptr);
+    
+    request->send(200, "application/json", "{\"status\":\"ok\"}"); });
+
+  // Handle NATS server settings with POST
+  server.on("/setNatsServer", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, (const char*)data);
+    if (error) {
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
+      request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+      return;
+    }
+
+    if (!doc["server"].is<String>()) {
+      request->send(400, "application/json", "{\"error\":\"server must be a string value\"}");
+      return;
+    }
+
+    String server = doc["server"].as<String>();
+    Log.infoln("Setting NATS server: %s", server.c_str());
+
+    natsServer = server;
+    preferences.putString("nats_server", server);
+    checkNatsConnection(nullptr);
+
+    request->send(200, "application/json", "{\"status\":\"ok\"}"); });
+
+  // Handle NATS username and password settings with POST
+  server.on("/setNatsUsername", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, (const char*)data);
+    if (error) {
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
+      request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+      return;
+    }
+
+    if (!doc["username"].is<String>()) {
+      request->send(400, "application/json", "{\"error\":\"username and password must be string values\"}");
+      return;
+    }
+
+    String username = doc["username"].as<String>();
+
+    Log.infoln("Setting NATS username: %s", username.c_str());
+
+    natsUser = username;
+    preferences.putString("nats_user", username);
+    checkNatsConnection(nullptr);
+
+    request->send(200, "application/json", "{\"status\":\"ok\"}"); });
+
+  // Handle NATS username and password settings with POST
+  server.on("/setNatsPassword", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, (const char*)data);
+    if (error) {
+      Log.error("JSON parse error: ");
+      Log.errorln(error.c_str());
+      request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+      return;
+    }
+
+    if (!doc["password"].is<String>()) {
+      request->send(400, "application/json", "{\"error\":\"username and password must be string values\"}");
+      return;
+    }
+
+    String password = doc["password"].as<String>();
+
+    Log.infoln("Setting NATS password.");
+
+    natsPassword = password;
+    preferences.putString("nats_password", password);
+    checkNatsConnection(nullptr);
+    
+    request->send(200, "application/json", "{\"status\":\"ok\"}"); });
+
   // Handle location updates with POST
   server.on("/setLocation", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
             {
@@ -444,9 +574,10 @@ void setupWebserver()
 
     Log.infoln("Performing reverse geocoding...");
     
+    WiFiClient wifiClient;
     HTTPClient http;
     String url = String("https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=") + String(lat) + "&longitude=" + String(lon) + "&localityLanguage=en";
-    http.begin(url);
+    http.begin(wifiClient, url);
     http.addHeader("User-Agent", "Aura-ESP32/1.0");
     http.setTimeout(10000); // 10 second timeout
 
@@ -484,83 +615,117 @@ void setupWebserver()
             {
     Log.infoln("Detecting location via IP geolocation...");
     
-    HTTPClient http;
-    http.begin("https://ipapi.co/json/");
-    http.addHeader("User-Agent", "Aura-ESP32/1.0");
-    http.setTimeout(10000); // 10 second timeout
-    
-    int httpResponseCode = http.GET();
-    
-    if (httpResponseCode == 200) {
-      String payload = http.getString();
-      Log.infoln("Geolocation response: %s", payload.c_str());
-      
-      // Parse the response
-      JsonDocument doc;
-      DeserializationError error = deserializeJson(doc, payload);
-      
-      if (!error && doc["latitude"].is<float>() && doc["longitude"].is<float>()) {
-        float lat = doc["latitude"];
-        float lon = doc["longitude"];
-        String city = doc["city"] | "Unknown";
-        String region = doc["region"] | "Unknown";
-        String timeZone = doc["timezone"] | "UTC";
-        String utcOffset = doc["utc_offset"] | "+00:00";
-        
-        // Validate coordinates
-        if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-          Serial.printf("Location detected: %.6f, %.6f (%s, %s)\n", lat, lon, city.c_str(), region.c_str());
-          
-          // Update global variables
-          weather_latitude = lat;
-          weather_longitude = lon;
-          weather_city = city;
-          weather_region = region;
-          time_zone = timeZone;
-          utc_offset = utcOffset;
+    try
+    {
+      logHeapStats("Before Geolocation Request");
 
-          // Save to preferences
-          preferences.putFloat("weather_lat", lat);
-          preferences.putFloat("weather_lon", lon);
-          preferences.putString("weather_city", city);
-          preferences.putString("weather_region", region);
-          preferences.putString("time_zone", timeZone);
-          preferences.putString("utc_offset", utcOffset);
-          
-          // Trigger weather update with new location
-          updateWeather(nullptr);
-          
-          // Return success with location data
-          JsonDocument response;
-          response["status"] = "ok";
-          response["latitude"] = lat;
-          response["longitude"] = lon;
-          response["city"] = city;
-          response["region"] = region;
-          
-          String responseStr;
-          serializeJson(response, responseStr);
-          request->send(200, "application/json", responseStr);
-        } else {
-          request->send(400, "application/json", "{\"error\":\"Invalid coordinates received\"}");
-        }
-      } else {
-        request->send(500, "application/json", "{\"error\":\"Failed to parse location data\"}");
-      }
-    } else {
-      Log.errorln("HTTP error: %d", httpResponseCode);
+      String payload;
+      int payloadLength = 0;
+      int httpResponseCode = 0;
       
-      // Check for redirect response
-      if (httpResponseCode == 301 || httpResponseCode == 302) {
-        String location = http.getLocation();
-        Log.infoln("Redirect to: %s", location.c_str());
+      // Scope HTTPClient to release buffer immediately after reading
+      {
+        HTTPClient http;
+        auto rc = http.begin("https://ipapi.co/json/");
+        Serial.printf("HTTP begin result: %d\n", rc);
+        http.addHeader("User-Agent", "Aura-ESP32/1.0");
+        http.setTimeout(10000);
+
+        Serial.println("Sending request to ipapi.co...");
+        httpResponseCode = http.GET();
+        Serial.printf("Received HTTP response code: %d\n", httpResponseCode);
+        auto httpSize = http.getSize();
+        Serial.printf("Response size: %d\n", httpSize);
+        
+        if (httpResponseCode == 200) {
+          Serial.println("Reading response payload...");
+          payload = http.getString();
+          payloadLength = strlen(payload.c_str());
+          Serial.printf("Geolocation response: %s (%d bytes)\n", payload.c_str(), payloadLength);
+        } else if (httpResponseCode == 301 || httpResponseCode == 302) {
+          String location = http.getLocation();
+          Log.infoln("Redirect to: %s", location.c_str());
+        }
+      }
+      
+      logHeapStats("After HTTP (before JSON parse) edwashere");
+      
+      if (httpResponseCode == 200) {
+        // Build a small filter: only keep fields we need
+        JsonDocument filter;
+        filter["latitude"] = true;
+        filter["longitude"] = true;
+        filter["city"] = true;
+        filter["region"] = true;
+        filter["timezone"] = true;
+        filter["utc_offset"] = true;
+
+        // Parse with filter + string buffer to minimize heap usage
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, payload.c_str(), payloadLength, DeserializationOption::Filter(filter));
+
+        if (!error && doc["latitude"].is<float>() && doc["longitude"].is<float>()) {
+          float lat = doc["latitude"];
+          float lon = doc["longitude"];
+          String city = doc["city"] | "Unknown";
+          String region = doc["region"] | "Unknown";
+          String timeZone = doc["timezone"] | "UTC";
+          String utcOffset = doc["utc_offset"] | "+00:00";
+          
+          // Validate coordinates
+          if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+            Log.infoln("Location detected: %.6f, %.6f (%s, %s)", lat, lon, city.c_str(), region.c_str());
+            
+            // Update global variables
+            weather_latitude = lat;
+            weather_longitude = lon;
+            weather_city = city;
+            weather_region = region;
+            time_zone = timeZone;
+            utc_offset = utcOffset;
+
+            // Save to preferences
+            preferences.putFloat("weather_lat", lat);
+            preferences.putFloat("weather_lon", lon);
+            preferences.putString("weather_city", city);
+            preferences.putString("weather_region", region);
+            preferences.putString("time_zone", timeZone);
+            preferences.putString("utc_offset", utcOffset);
+            
+            // Trigger weather update with new location
+            updateWeather(nullptr);
+            
+            // Return success with location data
+            JsonDocument response;
+            response["status"] = "ok";
+            response["latitude"] = lat;
+            response["longitude"] = lon;
+            response["city"] = city;
+            response["region"] = region;
+            
+            String responseStr;
+            serializeJson(response, responseStr);
+            request->send(200, "application/json", responseStr);
+          } else {
+            request->send(400, "application/json", "{\"error\":\"Invalid coordinates received\"}");
+          }
+        } else {
+          Log.errorln("Geolocation JSON parse error: %s", error.c_str());
+          request->send(500, "application/json", "{\"error\":\"Failed to parse location data\"}");
+        }
+      } else if (httpResponseCode == 301 || httpResponseCode == 302) {
         request->send(500, "application/json", "{\"error\":\"Service moved - please update firmware\"}");
       } else {
+        Log.errorln("HTTP error: %d", httpResponseCode);
         request->send(500, "application/json", "{\"error\":\"Geolocation service unavailable\"}");
       }
     }
-    
-    http.end(); });
+    catch (const std::exception& e)
+    {
+      Log.errorln("Exception during geolocation: %s", e.what());
+      request->send(500, "application/json", "{\"error\":\"Exception during geolocation\"}");
+    }
+  });
 
   server.begin();
   Log.infoln("Web server started on port 80");

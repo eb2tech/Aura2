@@ -21,5 +21,9 @@ extern String time_zone;
 extern String utc_offset;
 extern bool use_dst;
 extern bool use_mqtt;
+extern bool use_nats;
+extern String natsServer;
+extern String natsUser;
+extern String natsPassword;
 
 String getDeviceIdentifier();

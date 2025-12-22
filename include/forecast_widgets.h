@@ -18,3 +18,5 @@ struct backlightState_t
 };
 
 backlightState_t getBacklightState();
+
+void logHeapStats(const char *context);

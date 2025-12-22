@@ -8,11 +8,13 @@
 #include <WiFiManager.h>
 #include <ESPmDNS.h>
 #include <ArduinoLog.h>
+#include <string> // Added for std::string
 #include "ui/ui.h"
 #include "forecast_weather.h"
 #include "forecast_widgets.h"
 #include "forecast_settings.h"
 #include "forecast_mqtt.h"
+#include "forecast_nats.h"
 
 #define XPT2046_IRQ 36  // T_IRQ
 #define XPT2046_MOSI 32 // T_DIN
@@ -58,9 +60,13 @@ String time_zone = "America/Chicago";
 String utc_offset = "-0600";
 bool use_dst = true;
 bool use_mqtt = false;
+bool use_nats = false;
+String natsServer = "";
+String natsUser = "";
+String natsPassword = "";
 
 // Logging configuration
-static const int LogLineMax = 128;
+static const int LogLineMax = 1024;
 static const int LogQueueLength = 50;
 QueueHandle_t logQueue;
 
@@ -69,60 +75,68 @@ class QueueLogPrint : public Print
 public:
   QueueLogPrint(QueueHandle_t q) : queue(q)
   {
-    buffer[0] = '\0';
-    index = 0;
+    buffer.reserve(128);
   }
 
   virtual size_t write(uint8_t ch) override
   {
     if (ch == '\r')
+      return 1; // ignore CR, handle LF only
+
+    if (ch == '\n')
     {
-      // ignore CR, handle LF only
+      enqueueLine();  // flush on newline
+      buffer.clear(); 
       return 1;
     }
 
-    if (ch == '\n' || index >= LogLineMax - 1)
+    // If adding this char would exceed max payload, flush first
+    if (buffer.size() + 1 >= static_cast<size_t>(LogLineMax - 1))
     {
-      buffer[index] = '\0';
-      enqueueLine(buffer);
-      index = 0;
+      enqueueLine();
+      buffer.clear();
     }
-    else
-    {
-      buffer[index++] = static_cast<char>(ch);
-    }
+
+    buffer.push_back(static_cast<char>(ch));
     return 1;
   }
 
   virtual size_t write(const uint8_t *buf, size_t size) override
   {
-    size_t n = 0;
-    while (n < size)
+    for (size_t i = 0; i < size; ++i)
     {
-      write(buf[n++]);
+      write(buf[i]);
     }
     return size;
   }
 
 private:
-  void enqueueLine(const char *line)
+  void enqueueLine()
   {
+    if (buffer.empty())
+      return;
+
+    // Prepare payload: up to LogLineMax-2 chars + '\n' + '\0'
     char tmp[LogLineMax];
-    snprintf(tmp, LogLineMax, "%s\n", line); // re-add newline
+    size_t len = buffer.size();
+    if (len > static_cast<size_t>(LogLineMax - 2))
+    {
+      len = static_cast<size_t>(LogLineMax - 2);
+    }
+    memcpy(tmp, buffer.data(), len);
+    tmp[len] = '\n';
+    tmp[len + 1] = '\0';
 
     // Non-blocking send (drop if full)
     xQueueSend(queue, tmp, 0);
   }
 
   QueueHandle_t queue;
-  char buffer[LogLineMax];
-  size_t index;
+  std::string buffer;
 };
 
 void loggerTask(void *parameter)
 {
-  // Prepare to connect to Azure Function
-
   char line[LogLineMax];
 
   while (true)
@@ -132,14 +146,15 @@ void loggerTask(void *parameter)
       // Write to Serial
       Serial.print(line);
 
-      // POST to Function
-      // TODO
+      publishLogMessage(line);
     }
   }
 }
 
 void setupLogging()
 {
+  setupNats();
+
   logQueue = xQueueCreate(LogQueueLength, LogLineMax);
 
   QueueLogPrint *queuePrinter = new QueueLogPrint(logQueue);
@@ -153,6 +168,17 @@ void setupLogging()
       1,
       nullptr,
       1);
+}
+
+void logHeapStats(const char* tag = "HEAP")
+{
+  size_t freeHeap = ESP.getFreeHeap();
+  size_t maxBlock = ESP.getMaxAllocHeap();
+  size_t freeDefault = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
+  size_t largestDefault = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
+  Serial.printf("[%s] freeHeap=%u maxBlock=%u freeDefault=%u largestDefault=%u\n",
+             tag, (unsigned)freeHeap, (unsigned)maxBlock,
+             (unsigned)freeDefault, (unsigned)largestDefault);
 }
 
 uint64_t getChipId()
@@ -244,9 +270,10 @@ void updateClock(lv_timer_t *timer)
     return;
 
   char buf[16];
-  
+
   // Adjust for daylight saving time if enabled
-  if (use_dst) {
+  if (use_dst)
+  {
     timeinfo.tm_hour += 1; // Add one hour for DST
     Log.infoln("Daylight saving time is active - adding 1 hour");
   }
@@ -338,8 +365,8 @@ bool isWiFiConfigValid()
     return false;
   }
 
- Serial.println("Testing WiFi connection to: " + WiFi.SSID());
- Log.infoln("Testing WiFi connection to: %s", WiFi.SSID().c_str());
+  Serial.println("Testing WiFi connection to: " + WiFi.SSID());
+  Log.infoln("Testing WiFi connection to: %s", WiFi.SSID().c_str());
 
   // Try to connect with timeout
   WiFi.begin(); // Use saved credentials
@@ -372,7 +399,7 @@ void showWiFiSplashScreen()
   auto rotation = tft.getRotation();
   Log.infoln("Display rotation: %d", rotation);
 
-  //tft.setRotation(1); // Landscape
+  // tft.setRotation(1); // Landscape
 
   // Clear screen with black background
   tft.fillScreen(TFT_BLACK);
@@ -475,8 +502,7 @@ void setupWifi()
   if (WiFi.status() == WL_CONNECTED)
   {
     Log.infoln("Already connected to WiFi");
-    Serial.print("IP address: ");
-    Log.infoln(WiFi.localIP());
+    Log.info("IP address: %s", WiFi.localIP().toString().c_str());
     return;
   }
 
@@ -507,7 +533,7 @@ void setupWifi()
     // Connected successfully
     updateWiFiSplashStatus("WiFi connected successfully...", TFT_GREEN);
     Log.infoln("WiFi connected");
-    Log.info("IP address: $s", WiFi.localIP().toString().c_str());
+    Log.info("IP address: %s", WiFi.localIP().toString().c_str());
     delay(2000); // Show success message briefly
   }
 
@@ -567,11 +593,13 @@ void setupUi()
   auto weather_timer = lv_timer_create(updateWeather, 10 * 60 * 1000, NULL);   // Update weather every 10 minutes
   auto dim_timer = lv_timer_create(checkDimTime, 1 * 60 * 1000, NULL);         // Check dim time every minute
   auto mqtt_timer = lv_timer_create(checkMqttConnection, 5 * 60 * 1000, NULL); // Check MQTT connection every 5 minutes
+  auto nats_timer = lv_timer_create(checkNatsConnection, 5 * 60 * 1000, NULL); // Check NATS connection every 5 minute
 
   lv_timer_ready(clock_timer);   // Initial clock update
   lv_timer_ready(weather_timer); // Initial weather update
   lv_timer_ready(dim_timer);     // Initial dim time check
   lv_timer_ready(mqtt_timer);    // Initial MQTT connection check
+  lv_timer_ready(nats_timer);    // Initial NATS connection check
 }
 
 void setupClock()
@@ -580,14 +608,14 @@ void setupClock()
   int offsetValue = utc_offset.toInt();
   int offsetHours = offsetValue / 100;
   int offsetMinutes = abs(offsetValue) % 100;
-  
+
   // Convert to seconds for configTime()
   long offsetSeconds = (offsetHours * 3600) + (offsetMinutes * 60);
-  
+
   Log.infoln("Setting up NTP with timezone: %s", time_zone.c_str());
   Log.infoln("UTC offset: %s%s", utc_offset.c_str(), use_dst ? " (DST active)" : " (Standard time)");
   Log.infoln("Effective offset: %d seconds", offsetSeconds);
-  
+
   // Initialize NTP time synchronization with offset
   configTime(offsetSeconds, 0, "pool.ntp.org", "time.nist.gov");
 
@@ -652,13 +680,13 @@ void setup()
 
   tft.fillScreen(TFT_BLACK);
 
-  #if defined(CYD_SETUP_TYPE) && CYD_SETUP_TYPE == 1
+#if defined(CYD_SETUP_TYPE) && CYD_SETUP_TYPE == 1
   tft.setRotation(1);
-  #elif defined(CYD_SETUP_TYPE) && CYD_SETUP_TYPE == 2
+#elif defined(CYD_SETUP_TYPE) && CYD_SETUP_TYPE == 2
   tft.setRotation(2);
-  #else
-  #error "CYD_SETUP_TYPE not defined." // This is to force user to define CYD_SETUP_TYPE in platformio.ini and build for the correct setup
-  #endif
+#else
+#error "CYD_SETUP_TYPE not defined." // This is to force user to define CYD_SETUP_TYPE in platformio.ini and build for the correct setup
+#endif
 
   pinMode(LCD_BACKLIGHT_PIN, OUTPUT);
   digitalWrite(LCD_BACKLIGHT_PIN, HIGH); // Turn on backlight
@@ -666,7 +694,7 @@ void setup()
   tft_width = tft.width();
   tft_height = tft.height();
   Serial.println("TFT after rotation. Width: " + String(tft_width) + " Height: " + String(tft_height));
-  
+
   // Initialize the touchscreen
   touchscreenSpi.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS); // Start second SPI bus for touchscreen
   touchscreen.begin(touchscreenSpi);                                         // Touchscreen init
@@ -692,6 +720,10 @@ void setup()
   utc_offset = preferences.getString("utc_offset", utc_offset);
   use_dst = preferences.getBool("use_dst", use_dst);
   use_mqtt = preferences.getBool("use_mqtt", use_mqtt);
+  use_nats = preferences.getBool("use_nats", use_nats);
+  natsServer = preferences.getString("nats_server", natsServer);
+  natsUser = preferences.getString("nats_user", natsUser);
+  natsPassword = preferences.getString("nats_password", natsPassword);
 
   // Initialize LVGL
   lv_init();
@@ -712,8 +744,8 @@ void setup()
   lv_indev_set_read_cb(indev_touchpad, touchpadRead);
 
   // Set up everything else
-  setupLogging();
   setupWifi();
+  setupLogging();
   setupMdns();
   setupMqtt();
   setupUi();
@@ -740,6 +772,9 @@ void loop()
 
   // Handle MQTT tasks
   loopMqtt();
+
+  // Handle NATS tasks
+  loopNats();
 
   // Small delay to prevent watchdog issues
   delay(delayMs);
