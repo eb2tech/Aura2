@@ -75,9 +75,9 @@
 // For ST7735, ST7789 and ILI9341 ONLY, define the colour order IF the blue and red are swapped on your display
 // Try ONE option at a time to find the correct colour order for your display
 
-#if defined(CYD_SETUP_TYPE) && CYD_SETUP_TYPE == 1
+#if defined(CYD_SETUP_TYPE) && CYD_SETUP_TYPE == 2
 #define TFT_RGB_ORDER TFT_RGB  // Colour order Red-Green-Blue
-#elif defined(CYD_SETUP_TYPE) && CYD_SETUP_TYPE == 2
+#elif defined(CYD_SETUP_TYPE) && CYD_SETUP_TYPE == 1
 #define TFT_RGB_ORDER TFT_BGR  // Colour order Blue-Green-Red
 #else
 #error "CYD_SETUP_TYPE not defined." // This is to force user to define CYD_SETUP_TYPE in platformio.ini and build for the correct setup
