@@ -4,6 +4,8 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <ArduinoLog.h>
+#include <sstream>
+#include <iomanip>
 #include "ui/ui.h"
 #include "forecast_preferences.h"
 #include "forecast_settings.h"
@@ -648,8 +650,6 @@ void setupWebserver()
         }
       }
       
-      logHeapStats("After HTTP (before JSON parse) edwashere");
-      
       if (httpResponseCode == 200) {
         // Build a small filter: only keep fields we need
         JsonDocument filter;
@@ -674,7 +674,9 @@ void setupWebserver()
           
           // Validate coordinates
           if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-            Log.infoln("Location detected: %.6f, %.6f (%s, %s)", lat, lon, city.c_str(), region.c_str());
+            std::ostringstream locationMsg;
+            locationMsg << "Location detected: " << std::fixed << std::setprecision(6) << lat << ", " << lon << " (" << city.c_str() << ", " << region.c_str() << ")";
+            Log.infoln(locationMsg.str().c_str());
             
             // Update global variables
             weather_latitude = lat;
@@ -683,7 +685,7 @@ void setupWebserver()
             weather_region = region;
             time_zone = timeZone;
             utc_offset = utcOffset;
-
+            
             // Save to preferences
             preferences.putFloat("weather_lat", lat);
             preferences.putFloat("weather_lon", lon);
