@@ -4,6 +4,7 @@
 
 void checkNatsConnection(lv_timer_t *timer);
 void connectNats();
+void disconnectNats();
 void loopNats();
 void setupNats();
 

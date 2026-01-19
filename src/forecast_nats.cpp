@@ -15,6 +15,7 @@ void checkNatsConnection(lv_timer_t *timer)
 {
     if (!use_nats)
     {
+        disconnectNats();
         return;
     }
 
@@ -53,6 +54,16 @@ void connectNats()
     }
 }
 
+void disconnectNats()
+{
+    if (natsConnected)
+    {
+        natsClient.disconnect();
+        natsConnected = false;
+        Serial.println("NATS disconnected");
+    }
+}
+
 void setupNats()
 {
     if (!use_nats)
@@ -62,7 +73,7 @@ void setupNats()
     
     natsClient.setBufferSize(1024);
     natsClient.setServer(natsServer.c_str(), 1883);
-    Serial.println("NATS client configured to connect to: " + natsServer);
+    Serial.println("NATS client configured to connect to: " + natsServer + " (" + natsUser + ", " + natsPassword + ")");
 
     connectNats();
 }
