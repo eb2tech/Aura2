@@ -215,6 +215,35 @@ The TFT_eSPI configuration defines these pin connections:
 - Use PROGMEM for static data when possible
 - Monitor Serial output for memory allocation failures
 
+## NATS Logging
+
+The Aura2 project uses NATS for remote logging via the `forecast_nats.cpp` module. This allows centralized collection of log messages from the device to an external NATS server.
+
+### NATS Log Message Format
+Log messages are published as JSON to the subject `aura2/logs/<device-id>` with the following structure:
+```json
+{
+  "timestamp": 1706858400,
+  "message": "Log message text",
+  "message_length": 17
+}
+```
+- **timestamp**: Unix timestamp (seconds since epoch) captured using `time(nullptr)`. NTP is enabled via `configTime()` at startup, ensuring externally-correct timestamps for log message recipients.
+- **message**: The log message text
+- **message_length**: Character count of the message
+
+### Usage
+- Enable NATS by configuring the NATS server URL in settings
+- Log messages are published asynchronously via `publish_log_message(const char *message)`
+- Only publishes when NATS connection is active (`natsConnected` flag)
+- Messages are published to a per-device subject for easy filtering
+
+### NTP Configuration
+NTP is automatically configured during WiFi initialization in `main.cpp`:
+- Uses `pool.ntp.org` and `time.nist.gov` as NTP servers
+- Respects the configured time zone offset for local time operations
+- `time(nullptr)` returns Unix timestamp in UTC; local time obtained via `getLocalTime()` when needed
+
 ## Troubleshooting Build Issues
 
 ### Library Version Conflicts

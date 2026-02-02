@@ -94,7 +94,7 @@ void publishLogMessage(const char* message)
     }
 
     JsonDocument logMessage;
-    logMessage["timestamp"] = millis();
+    logMessage["timestamp"] = (uint32_t)time(nullptr);
     logMessage["message"] = message;
     logMessage["message_length"] = strlen(message);
 
