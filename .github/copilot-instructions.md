@@ -99,6 +99,8 @@ After successfully uploading firmware, test these complete scenarios:
 ### Key File Locations
 ```
 Repository Structure:
+├── data/
+│   └── index.html               # Web-based settings interface hosted on device
 ├── src/
 │   ├── main.cpp                 # Main Arduino application
 │   ├── extract_unicode_chars.py # Unicode analysis utility
@@ -174,6 +176,7 @@ The TFT_eSPI configuration defines these pin connections:
 
 ### Main Components
 - **src/main.cpp**: Main application logic, UI, and weather fetching
+- **data/index.html**: Web interface for remote device configuration and settings
 - **LVGL**: UI framework for ESP32 with touchscreen support
 - **TFT_eSPI**: Display driver for ILI9341 screens
 - **WiFiManager**: Captive portal for WiFi configuration
