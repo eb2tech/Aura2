@@ -8,6 +8,8 @@
 #include <WiFiManager.h>
 #include <ESPmDNS.h>
 #include <ArduinoLog.h>
+#include <FS.h>
+#include <LittleFS.h>
 #include <string> // Added for std::string
 #include "ui/ui.h"
 #include "forecast_weather.h"
@@ -275,7 +277,6 @@ void updateClock(lv_timer_t *timer)
   if (use_dst)
   {
     timeinfo.tm_hour += 1; // Add one hour for DST
-    Log.infoln("Daylight saving time is active - adding 1 hour");
   }
 
   if (show_24hour_clock)
@@ -661,15 +662,82 @@ void setupMdns()
   MDNS.enableArduino();
 }
 
+void setupLittleFS()
+{
+  if (!LittleFS.begin(false, "/littlefs"))
+  {
+    Serial.println("LittleFS mount failed");
+  }
+  else
+  {
+    Serial.println("LittleFS mounted successfully to /littlefs");
+    Serial.printf("Total: %u bytes, Used: %u bytes\n", (uint32_t)LittleFS.totalBytes(), (uint32_t)LittleFS.usedBytes());
+
+    // Test file access via VFS (how LVGL does it)
+    FILE *f = fopen("/littlefs/index.html", "r");
+    if (f)
+    {
+      Serial.println("VFS test: Successfully opened /littlefs/index.html via fopen");
+      fclose(f);
+    }
+    else
+    {
+      Serial.println("VFS test: FAILED to open /littlefs/index.html via fopen");
+    }
+
+    // List images directory
+    File root = LittleFS.open("/images");
+    if (root && root.isDirectory())
+    {
+      Serial.println("Contents of /images:");
+      File file = root.openNextFile();
+      while (file)
+      {
+        Serial.printf("  - %s (%u bytes)\n", file.name(), (uint32_t)file.size());
+        file = root.openNextFile();
+      }
+    }
+    else
+    {
+      Serial.println("FAILED to open /images directory");
+    }
+  }
+}
+
 void setup()
 {
   Serial.begin(115200);
   Serial.println("Aura2 Starting...");
 
-  String LVGL_Arduino = String("LVGL Library Version: ") + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
-  Serial.println(LVGL_Arduino);
+  setupLittleFS();
 
-  Serial.println("In setup()");
+  // Load saved preferences early so all systems use current data
+  preferences.begin("aura2", false);
+  display_seven_day_forecast = preferences.getBool("display_7day", display_seven_day_forecast);
+  mqttServer = preferences.getString("mqtt_server", mqttServer);
+  mqttUser = preferences.getString("mqtt_user", mqttUser);
+  mqttPassword = preferences.getString("mqtt_password", mqttPassword);
+  brightness = preferences.getUInt("brightness", brightness);
+  use_fahrenheit = preferences.getBool("use_fahrenheit", use_fahrenheit);
+  weather_latitude = preferences.getFloat("weather_lat", weather_latitude);
+  weather_longitude = preferences.getFloat("weather_lon", weather_longitude);
+  weather_city = preferences.getString("weather_city", weather_city);
+  weather_region = preferences.getString("weather_region", weather_region);
+  show_24hour_clock = preferences.getBool("show_24hour", show_24hour_clock);
+  dim_at_time = preferences.getBool("dim_at_time", dim_at_time);
+  dim_start_time = preferences.getString("dim_start_time", dim_start_time);
+  dim_end_time = preferences.getString("dim_end_time", dim_end_time);
+  time_zone = preferences.getString("time_zone", time_zone);
+  utc_offset = preferences.getString("utc_offset", utc_offset);
+  use_dst = preferences.getBool("use_dst", use_dst);
+  use_mqtt = preferences.getBool("use_mqtt", use_mqtt);
+  use_nats = preferences.getBool("use_nats", use_nats);
+  natsServer = preferences.getString("nats_server", natsServer);
+  natsUser = preferences.getString("nats_user", natsUser);
+  natsPassword = preferences.getString("nats_password", natsPassword);
+
+  // Initialize logging early
+  setupLogging();
 
   // Initialize TFT display hardware
   tft.init();
@@ -700,31 +768,6 @@ void setup()
   touchscreen.begin(touchscreenSpi);                                         // Touchscreen init
   touchscreen.setRotation(1);                                                // Inverted landscape orientation to match screen
 
-  // Load saved preferences
-  preferences.begin("aura2", false);
-  display_seven_day_forecast = preferences.getBool("display_7day", display_seven_day_forecast);
-  mqttServer = preferences.getString("mqtt_server", mqttServer);
-  mqttUser = preferences.getString("mqtt_user", mqttUser);
-  mqttPassword = preferences.getString("mqtt_password", mqttPassword);
-  brightness = preferences.getUInt("brightness", brightness);
-  use_fahrenheit = preferences.getBool("use_fahrenheit", use_fahrenheit);
-  weather_latitude = preferences.getFloat("weather_lat", weather_latitude);
-  weather_longitude = preferences.getFloat("weather_lon", weather_longitude);
-  weather_city = preferences.getString("weather_city", weather_city);
-  weather_region = preferences.getString("weather_region", weather_region);
-  show_24hour_clock = preferences.getBool("show_24hour", show_24hour_clock);
-  dim_at_time = preferences.getBool("dim_at_time", dim_at_time);
-  dim_start_time = preferences.getString("dim_start_time", dim_start_time);
-  dim_end_time = preferences.getString("dim_end_time", dim_end_time);
-  time_zone = preferences.getString("time_zone", time_zone);
-  utc_offset = preferences.getString("utc_offset", utc_offset);
-  use_dst = preferences.getBool("use_dst", use_dst);
-  use_mqtt = preferences.getBool("use_mqtt", use_mqtt);
-  use_nats = preferences.getBool("use_nats", use_nats);
-  natsServer = preferences.getString("nats_server", natsServer);
-  natsUser = preferences.getString("nats_user", natsUser);
-  natsPassword = preferences.getString("nats_password", natsPassword);
-
   // Initialize LVGL
   lv_init();
   lv_log_register_print_cb(logPrint);
@@ -745,7 +788,6 @@ void setup()
 
   // Set up everything else
   setupWifi();
-  setupLogging();
   setupMdns();
   setupMqtt();
   setupUi();

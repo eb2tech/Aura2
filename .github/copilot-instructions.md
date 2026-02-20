@@ -30,7 +30,7 @@ The project is pre-configured in `platformio.ini` with these settings:
 ### Required Libraries (Auto-installed)
 These libraries are automatically installed via `platformio.ini`:
 - ArduinoJson 7.4.2
-- lvgl 9.3.0
+- lvgl 9.4.0
 - TFT_eSPI 2.5.43
 - WiFiManager 2.0.17
 - XPT2046_Touchscreen 1.4 (from GitHub)
@@ -100,24 +100,42 @@ After successfully uploading firmware, test these complete scenarios:
 ```
 Repository Structure:
 ├── data/
-│   └── index.html               # Web-based settings interface hosted on device
+│   ├── index.html               # Web-based settings interface hosted on device
+│   └── images/                  # Weather icons and images in binary format (.bin)
 ├── src/
 │   ├── main.cpp                 # Main Arduino application
+│   ├── forecast_weather.cpp     # Weather logic and image selection (SPIFFS based)
 │   ├── extract_unicode_chars.py # Unicode analysis utility
-│   ├── icon_*.c                 # Weather icon assets
-│   ├── image_*.c                # Weather image assets
 │   ├── lv_font_*.c              # LVGL font files
 │   └── translations.h           # Multilingual string definitions
 ├── include/
 │   ├── Setup_ESP32_2432S028R_ILI9341.h  # TFT_eSPI configuration
-│   └── lv_conf.h                # LVGL configuration (if needed)
-├── platformio.ini               # PlatformIO project configuration
+│   └── lv_conf.h                # LVGL configuration (FS enabled, limited fonts)
+├── platformio.ini               # PlatformIO project configuration (Custom OTA partitions)
+└── partitions.csv               # Partition table for 4MB ESP32 with dual OTA slots
 ```
 
 ### Modifying Weather Display
 - Main UI creation: `create_ui()` function in src/main.cpp
 - Weather data fetching: `fetch_and_update_weather()` function
-- Icon selection: `choose_image()` and `choose_icon()` functions
+- Icon selection: `choose_image()` and `choose_icon()` functions (points to "S:/images/xxx.bin")
+
+### Adding New Images (Preferred Workflow)
+1. **Source**: Use a high-quality **PNG** image (e.g., 100x100 for main weather icon).
+2. **Convert**: Use the [LVGL Online Image Converter](https://lvgl.io/tools/imageconverter).
+   - **Version**: Select **LVGL v9**.
+   - **Color format**: Select **CF_RGB565** or **CF_RGB565A8** (if transparency is needed).
+   - **Output**: Choose **Binary**.
+3. **Deploy**:
+   - Save the `.bin` to `data/images/` inside the workspace.
+   - Use a short, descriptive name (max 12 chars if possible, e.g., `sunny.bin`).
+4. **Code Update**:
+   - Update `choose_image()` or `choose_icon()` in `forecast_weather.cpp` to use the new filename.
+   - **CRITICAL**: Use the `S:/images/` prefix (e.g., `S:/images/sunny.bin`).
+5. **Flash**: Run the **Upload Filesystem Image** task in PlatformIO to sync the `data/` folder to LittleFS.
+
+### Legacy Asset Conversion (Deprecated)
+The `images_backup` folder and `convert_images.py` script were used to transition legacy C-array icons to LVGL 9 binaries. They are no longer part of the active development workflow but documented the 12-byte header requirement for LVX binaries (`0x19` magic, `cf_id`, `0`, `w`, `h`, `stride`, `0`).
 
 ### Adding New Languages
 1. Add language enum to `enum Language` in src/translations.h

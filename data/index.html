@@ -109,34 +109,60 @@
     }
 
     .brightness-slider {
-      width: 100%;
-      height: 8px;
-      border-radius: 4px;
-      background: #ddd;
-      outline: none;
-      cursor: pointer;
-      accent-color: #1d2a37;
-    }
-
-    .brightness-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #2196F3;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      width: 100% !important;
+      height: 28px !important;
+      background: transparent;
+      outline: none;
+      margin: 15px 0 !important;
+      padding: 0;
+      accent-color: #1d2a37 !important;
     }
 
-    .brightness-slider::-moz-range-thumb {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #2196F3;
+    /* Webkit (Chrome/Edge/Safari) Track */
+    .brightness-slider::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 28px;
       cursor: pointer;
+      background: #ccc;
+      border-radius: 14px;
       border: none;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      box-shadow: none;
+    }
+
+    /* Webkit (Chrome/Edge/Safari) Thumb */
+    .brightness-slider::-webkit-slider-thumb {
+      height: 24px;
+      width: 24px;
+      border-radius: 50%;
+      background: #1d2a37;
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: 2px; /* Centers thumb vertically in 28px track (28-24)/2=2 */
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Firefox/Mozilla Track */
+    .brightness-slider::-moz-range-track {
+      width: 100%;
+      height: 28px;
+      cursor: pointer;
+      background: #ccc;
+      border-radius: 14px;
+      border: none;
+    }
+
+    /* Firefox/Mozilla Thumb */
+    .brightness-slider::-moz-range-thumb {
+      height: 24px;
+      width: 24px;
+      border-radius: 50%;
+      background: #1d2a37;
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
     .toggle-container {
@@ -178,11 +204,11 @@
     }
 
     .toggle-switch input:checked {
-      background: #2196F3;
+      background: #1d2a37;
     }
 
     .toggle-switch:has(input:checked) {
-      background: #2196F3;
+      background: #1d2a37;
     }
 
     .input-group {
@@ -204,7 +230,7 @@
     .text-input:focus,
     .time-input:focus {
       outline: none;
-      border-color: #2196F3;
+      border-color: #1d2a37;
       box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
     }
 
@@ -222,7 +248,7 @@
 
     .coordinates-input:focus {
       outline: none;
-      border-color: #2196F3;
+      border-color: #1d2a37;
       box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
     }
 
@@ -242,15 +268,15 @@
     }
 
     .location-set:enabled {
-      background: #2196F3;
-      border-color: #2196F3;
+      background: #1d2a37;
+      border-color: #1d2a37;
       color: white;
       cursor: pointer;
     }
 
     .location-set:enabled:hover {
-      background: #1976D2;
-      border-color: #1976D2;
+      background: #101820;
+      border-color: #101820;
     }
 
     .location-set:disabled {
@@ -275,8 +301,8 @@
 
     .password-toggle:hover {
       background: #e8f4ff;
-      border-color: #2196F3;
-      color: #2196F3;
+      border-color: #1d2a37;
+      color: #1d2a37;
     }
 
     .location-set {
@@ -294,8 +320,8 @@
 
     .location-set:hover {
       background: #e8f4ff;
-      border-color: #2196F3;
-      color: #2196F3;
+      border-color: #1d2a37;
+      color: #1d2a37;
     }
 
     .nested-settings {
@@ -367,8 +393,7 @@
       <div class="setting-group">
         <label class="setting-label">Display Brightness</label>
         <div class="brightness-container">
-          <input type="range" min="0" max="255" value="%BRIGHTNESS_VALUE%" id="brightnessSlider"
-            class="brightness-slider" oninput="updateBrightness(this.value)" />
+          <input type="range" min="0" max="255" value="%BRIGHTNESS_VALUE%" id="brightnessSlider" class="brightness-slider" oninput="updateBrightness(this.value)" />
         </div>
       </div>
 

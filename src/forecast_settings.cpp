@@ -4,8 +4,6 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <ArduinoLog.h>
-#include <sstream>
-#include <iomanip>
 #include "ui/ui.h"
 #include "forecast_preferences.h"
 #include "forecast_settings.h"
@@ -109,15 +107,10 @@ void setupWebserver()
 {
   Log.infoln("Setting up settings web server...");
 
-  if (!LittleFS.begin(false))
+  // LittleFS is already initialized in main.cpp, we just verify its existence
+  if (!LittleFS.exists("/"))
   {
-    Log.errorln("LittleFS mount failed");
-    return;
-  }
-  else
-  {
-    Log.infoln("LittleFS mounted successfully");
-    Log.infoln("Total: %d bytes, Used: %d bytes", LittleFS.totalBytes(), LittleFS.usedBytes());
+    Log.warningln("LittleFS not accessible in setupWebserver");
   }
 
   // Verify required files exist
@@ -674,9 +667,9 @@ void setupWebserver()
           
           // Validate coordinates
           if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-            std::ostringstream locationMsg;
-            locationMsg << "Location detected: " << std::fixed << std::setprecision(6) << lat << ", " << lon << " (" << city.c_str() << ", " << region.c_str() << ")";
-            Log.infoln(locationMsg.str().c_str());
+            char locationMsg[128];
+            snprintf(locationMsg, sizeof(locationMsg), "Location detected: %.6f, %.6f (%s, %s)", lat, lon, city.c_str(), region.c_str());
+            Log.infoln(locationMsg);
             
             // Update global variables
             weather_latitude = lat;

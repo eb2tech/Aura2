@@ -12,215 +12,215 @@
 float temperature_now = 0.0;
 float feels_like_temperature = 0.0;
 
-const lv_img_dsc_t *chooseImage(int code, int is_day)
+const char *chooseImage(int code, int is_day)
 {
     switch (code)
     {
     // Clear sky
     case 0:
         return is_day
-                   ? &image_sunny
-                   : &image_clear_night;
+                   ? "S:/images/image_sunny.bin"
+                   : "S:/images/image_clear_night.bin";
 
     // Mainly clear
     case 1:
         return is_day
-                   ? &image_mostly_sunny
-                   : &image_mostly_clear_night;
+                   ? "S:/images/image_mostly_sunny.bin"
+                   : "S:/images/image_mostly_clear_night.bin";
 
     // Partly cloudy
     case 2:
         return is_day
-                   ? &image_partly_cloudy
-                   : &image_partly_cloudy_night;
+                   ? "S:/images/image_partly_cloudy.bin"
+                   : "S:/images/image_partly_cloudy_night.bin";
 
     // Overcast
     case 3:
-        return &image_cloudy;
+        return "S:/images/image_cloudy.bin";
 
     // Fog / mist
     case 45:
     case 48:
-        return &image_haze_fog_dust_smoke;
+        return "S:/images/image_haze_fog.bin";
 
     // Drizzle (light → dense)
     case 51:
     case 53:
     case 55:
-        return &image_drizzle;
+        return "S:/images/image_drizzle.bin";
 
     // Freezing drizzle
     case 56:
     case 57:
-        return &image_sleet_hail;
+        return "S:/images/image_sleet_hail.bin";
 
     // Rain: slight showers
     case 61:
         return is_day
-                   ? &image_scattered_showers_day
-                   : &image_scattered_showers_night;
+                   ? "S:/images/image_scat_shwrs_day.bin"
+                   : "S:/images/image_scat_shwrs_night.bin";
 
     // Rain: moderate
     case 63:
-        return &image_showers_rain;
+        return "S:/images/image_showers_rain.bin";
 
     // Rain: heavy
     case 65:
-        return &image_heavy_rain;
+        return "S:/images/image_heavy_rain.bin";
 
     // Freezing rain
     case 66:
     case 67:
-        return &image_wintry_mix_rain_snow;
+        return "S:/images/image_wintry_mix.bin";
 
     // Snow fall (light, moderate, heavy) & snow showers (light)
     case 71:
     case 73:
     case 75:
     case 85:
-        return &image_snow_showers_snow;
+        return "S:/images/image_snow_showers_snow.bin";
 
     // Snow grains
     case 77:
-        return &image_flurries;
+        return "S:/images/image_flurries.bin";
 
     // Rain showers (slight → moderate)
     case 80:
     case 81:
         return is_day
-                   ? &image_scattered_showers_day
-                   : &image_scattered_showers_night;
+                   ? "S:/images/image_scat_shwrs_day.bin"
+                   : "S:/images/image_scat_shwrs_night.bin";
 
     // Rain showers: violent
     case 82:
-        return &image_heavy_rain;
+        return "S:/images/image_heavy_rain.bin";
 
     // Heavy snow showers
     case 86:
-        return &image_heavy_snow;
+        return "S:/images/image_heavy_snow.bin";
 
     // Thunderstorm (light)
     case 95:
         return is_day
-                   ? &image_isolated_scattered_tstorms_day
-                   : &image_isolated_scattered_tstorms_night;
+                   ? "S:/images/image_iso_scat_ts_day.bin"
+                   : "S:/images/image_iso_scat_ts_night.bin";
 
     // Thunderstorm with hail
     case 96:
     case 99:
-        return &image_strong_tstorms;
+        return "S:/images/image_strong_tstorms.bin";
 
     // Fallback for any other code
     default:
         return is_day
-                   ? &image_mostly_cloudy_day
-                   : &image_mostly_cloudy_night;
+                   ? "S:/images/image_mostly_cloudy_day.bin"
+                   : "S:/images/image_mostly_cloudy_night.bin";
     }
 }
 
-const lv_img_dsc_t *chooseIcon(int code, int is_day)
+const char *chooseIcon(int code, int is_day)
 {
     switch (code)
     {
     // Clear sky
     case 0:
         return is_day
-                   ? &icon_sunny
-                   : &icon_clear_night;
+                   ? "S:/images/icon_sunny.bin"
+                   : "S:/images/icon_clear_night.bin";
 
     // Mainly clear
     case 1:
         return is_day
-                   ? &icon_mostly_sunny
-                   : &icon_mostly_clear_night;
+                   ? "S:/images/icon_mostly_sunny.bin"
+                   : "S:/images/icon_mostly_clear_night.bin";
 
     // Partly cloudy
     case 2:
         return is_day
-                   ? &icon_partly_cloudy
-                   : &icon_partly_cloudy_night;
+                   ? "S:/images/icon_partly_cloudy.bin"
+                   : "S:/images/icon_partly_cloudy_night.bin";
 
     // Overcast
     case 3:
-        return &icon_cloudy;
+        return "S:/images/icon_cloudy.bin";
 
     // Fog / mist
     case 45:
     case 48:
-        return &icon_haze_fog_dust_smoke;
+        return "S:/images/icon_haze_fog.bin";
 
     // Drizzle (light → dense)
     case 51:
     case 53:
     case 55:
-        return &icon_drizzle;
+        return "S:/images/icon_drizzle.bin";
 
     // Freezing drizzle
     case 56:
     case 57:
-        return &icon_sleet_hail;
+        return "S:/images/icon_sleet_hail.bin";
 
     // Rain: slight showers
     case 61:
         return is_day
-                   ? &icon_scattered_showers_day
-                   : &icon_scattered_showers_night;
+                   ? "S:/images/icon_scat_shwrs_day.bin"
+                   : "S:/images/icon_scat_shwrs_night.bin";
 
     // Rain: moderate
     case 63:
-        return &icon_showers_rain;
+        return "S:/images/icon_showers_rain.bin";
 
     // Rain: heavy
     case 65:
-        return &icon_heavy_rain;
+        return "S:/images/icon_heavy_rain.bin";
 
     // Freezing rain
     case 66:
     case 67:
-        return &icon_wintry_mix_rain_snow;
+        return "S:/images/icon_wintry_mix.bin";
 
     // Snow fall (light, moderate, heavy) & snow showers (light)
     case 71:
     case 73:
     case 75:
     case 85:
-        return &icon_snow_showers_snow;
+        return "S:/images/icon_snow_showers_snow.bin";
 
     // Snow grains
     case 77:
-        return &icon_flurries;
+        return "S:/images/icon_flurries.bin";
 
     // Rain showers (slight → moderate)
     case 80:
     case 81:
         return is_day
-                   ? &icon_scattered_showers_day
-                   : &icon_scattered_showers_night;
+                   ? "S:/images/icon_scat_shwrs_day.bin"
+                   : "S:/images/icon_scat_shwrs_night.bin";
 
     // Rain showers: violent
     case 82:
-        return &icon_heavy_rain;
+        return "S:/images/icon_heavy_rain.bin";
 
     // Heavy snow showers
     case 86:
-        return &icon_heavy_snow;
+        return "S:/images/icon_heavy_snow.bin";
 
     // Thunderstorm (light)
     case 95:
         return is_day
-                   ? &icon_isolated_scattered_tstorms_day
-                   : &icon_isolated_scattered_tstorms_night;
+                   ? "S:/images/icon_iso_scat_ts_day.bin"
+                   : "S:/images/icon_iso_scat_ts_night.bin";
 
     // Thunderstorm with hail
     case 96:
     case 99:
-        return &icon_strong_tstorms;
+        return "S:/images/icon_strong_tstorms.bin";
 
     // Fallback for any other code
     default:
         return is_day
-                   ? &icon_mostly_cloudy_day
-                   : &icon_mostly_cloudy_night;
+                   ? "S:/images/icon_mostly_cloudy_day.bin"
+                   : "S:/images/icon_mostly_cloudy_night.bin";
     }
 }
 
