@@ -8,9 +8,16 @@ extern "C" {
 #endif
 
 typedef struct _objects_t {
-    lv_obj_t *main;
+    lv_obj_t *setup;
+    lv_obj_t *weather;
     lv_obj_t *settings;
-    lv_obj_t *startup;
+    lv_obj_t *device_id_label;
+    lv_obj_t *startup_status_label;
+    lv_obj_t *no_config_needed;
+    lv_obj_t *device_ssid_ready_label;
+    lv_obj_t *device_ip_label;
+    lv_obj_t *config_needed;
+    lv_obj_t *device_ssid_label;
     lv_obj_t *current_conditions_image;
     lv_obj_t *current_temperature_label;
     lv_obj_t *obj0;
@@ -23,26 +30,24 @@ typedef struct _objects_t {
     lv_obj_t *obj2;
     lv_obj_t *ipv4_label;
     lv_obj_t *mdns_label;
-    lv_obj_t *device_id_label;
-    lv_obj_t *startup_status_label;
 } objects_t;
 
 extern objects_t objects;
 
 enum ScreensEnum {
-    SCREEN_ID_MAIN = 1,
-    SCREEN_ID_SETTINGS = 2,
-    SCREEN_ID_STARTUP = 3,
+    SCREEN_ID_SETUP = 1,
+    SCREEN_ID_WEATHER = 2,
+    SCREEN_ID_SETTINGS = 3,
 };
 
-void create_screen_main();
-void tick_screen_main();
+void create_screen_setup();
+void tick_screen_setup();
+
+void create_screen_weather();
+void tick_screen_weather();
 
 void create_screen_settings();
 void tick_screen_settings();
-
-void create_screen_startup();
-void tick_screen_startup();
 
 void tick_screen_by_id(enum ScreensEnum screenId);
 void tick_screen(int screen_index);

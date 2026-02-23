@@ -367,7 +367,7 @@ bool isWiFiConfigValid()
   }
 
   Serial.println("Testing WiFi connection to: " + WiFi.SSID());
-  Log.infoln("Testing WiFi connection to: %s", WiFi.SSID().c_str());
+//  Log.infoln("Testing WiFi connection to: %s", WiFi.SSID().c_str());
 
   // Try to connect with timeout
   WiFi.begin(); // Use saved credentials
@@ -385,98 +385,67 @@ bool isWiFiConfigValid()
   bool connected = (WiFi.status() == WL_CONNECTED);
   if (connected)
   {
-    Log.infoln("WiFi connection test successful");
+    Serial.println("WiFi connection test successful");
   }
   else
   {
-    Log.infoln("WiFi connection test failed - status: %s", String(WiFi.status()).c_str());
+    Serial.println("WiFi connection test failed - status: " + String(WiFi.status()));
   }
 
   return connected;
+}
+
+void updateWiFiSplashStatus(const String &status, uint16_t color = TFT_GREEN)
+{
+  delay(100);
+  lv_tick_inc(100);
+  lv_timer_handler();
+
+  Serial.println(status);
+  lv_label_set_text(objects.startup_status_label, status.c_str());
+  lv_obj_set_style_text_color(objects.startup_status_label, lv_color_hex(color), LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  delay(100);
+
+  lv_tick_inc(100);
+  lv_timer_handler();
 }
 
 void showWiFiSplashScreen()
 {
   Serial.println("Showing WiFi configuration splash screen...");
 
-  // tft.setRotation(1); // Landscape
-
-  // Clear screen with black background
-  // tft.fillScreen(TFT_GREEN);
-
-  // // Set text properties
-  // tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  // tft.setTextWrap(true);
-
-  // // Title
-  // tft.setTextSize(2);
-  // tft.setCursor(30, 20);
-  // tft.println("Aura2 Setup");
-
-  // // Device ID
-  // tft.setTextSize(1);
-  // tft.setCursor(10, 55);
-  // tft.setTextColor(TFT_CYAN, TFT_BLACK);
-  // tft.println("Device: " + getDeviceIdentifier());
-
-  // if (!isWiFiConfigValid())
-  // {
-  //   // Main instructions
-  //   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  //   tft.setCursor(10, 80);
-  //   tft.println("WiFi configuration needed:");
-
-  //   tft.setCursor(10, 100);
-  //   tft.println("1. Connect phone/laptop WiFi to:");
-
-  //   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
-  //   tft.setCursor(20, 115);
-  //   tft.println("   \"" + getDeviceIdentifier() + "\"");
-
-  //   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  //   tft.setCursor(10, 135);
-  //   tft.println("2. Open web browser");
-
-  //   tft.setCursor(10, 150);
-  //   tft.print("3. Go to: ");
-  //   tft.setTextColor(TFT_CYAN, TFT_BLACK);
-  //   tft.println("192.168.4.1");
-
-  //   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  //   tft.setCursor(10, 170);
-  //   tft.println("4. Select your WiFi network");
-
-  //   tft.setCursor(10, 185);
-  //   tft.println("5. Enter password");
-
-  //   // Status at bottom
-  //   tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  //   tft.setCursor(10, 210);
-  //   tft.println("Starting WiFi hotspot...");
-  // }
-  // else
-  // {
-  //   tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  //   tft.setCursor(10, 80);
-  //   tft.println("WiFi ready: " + WiFi.SSID());
-  //   tft.setCursor(10, 100);
-  //   tft.println("IP: " + WiFi.localIP().toString());
-  // }
-
-  // // Force display update
-  // delay(100);
   String deviceIdLabelText = getDeviceIdentifier();
   lv_label_set_text(objects.device_id_label, deviceIdLabelText.c_str());
-  loadScreen(SCREEN_ID_STARTUP);
+
+  if (!isWiFiConfigValid())
+  {
+    Serial.println("WiFi configuration is not valid, starting AP mode");
+
+    lv_obj_add_flag(objects.no_config_needed, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(objects.config_needed, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(objects.device_ssid_label, deviceIdLabelText.c_str());
+
+    updateWiFiSplashStatus("Starting WiFi hotspot...", TFT_GREEN);
+  }
+  else
+  {
+    Serial.println("WiFi configuration is valid, connecting to WiFi");
+    
+    lv_obj_add_flag(objects.config_needed, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(objects.no_config_needed, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(objects.device_ssid_ready_label, WiFi.SSID().c_str());
+    lv_label_set_text(objects.device_ip_label, WiFi.localIP().toString().c_str());
+
+    String status = "WiFi ready: " + WiFi.SSID() + "\nIP: " + WiFi.localIP().toString();
+    updateWiFiSplashStatus(status, TFT_GREEN);
+  }
+
+  // Force display update
+  lv_tick_inc(100);
+  lv_timer_handler();
 
   Serial.println("WiFi splash screen displayed");
-  delay(100);
-}
-
-void updateWiFiSplashStatus(const String &status, uint16_t color = TFT_GREEN)
-{
-  lv_label_set_text(objects.startup_status_label, status.c_str());
-
   delay(100);
 }
 
@@ -765,22 +734,21 @@ void setup()
   lv_indev_set_type(indev_touchpad, LV_INDEV_TYPE_POINTER);
   lv_indev_set_read_cb(indev_touchpad, touchpadRead);
 
-  setupUi();
-
   // Set up everything else
+  setupUi();
   setupWifi();
   setupLittleFS();
   setupLogging();
   setupMdns();
   setupMqtt();
-//  setupUi();
   setupClock();
   setupWebserver();
 
+  loadScreen(SCREEN_ID_WEATHER);
+  updateWeather(NULL);
+
   Log.infoln("UI initialized and ready");
 
-  loadScreen(SCREEN_ID_MAIN);
-  
   Log.infoln("Setup complete");
 }
 

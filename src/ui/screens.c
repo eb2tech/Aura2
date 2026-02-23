@@ -14,9 +14,138 @@ objects_t objects;
 lv_obj_t *tick_value_change_obj;
 uint32_t active_theme_index = 0;
 
-void create_screen_main() {
+void create_screen_setup() {
     lv_obj_t *obj = lv_obj_create(0);
-    objects.main = obj;
+    objects.setup = obj;
+    lv_obj_set_pos(obj, 0, 0);
+    lv_obj_set_size(obj, 320, 240);
+    lv_obj_set_style_bg_color(obj, lv_color_hex(0xff000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(obj, lv_color_hex(0xffffffff), LV_PART_MAIN | LV_STATE_DEFAULT);
+    {
+        lv_obj_t *parent_obj = obj;
+        {
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            lv_obj_set_pos(obj, 113, 12);
+            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_label_set_text(obj, "Aura 2 Setup");
+        }
+        {
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            lv_obj_set_pos(obj, 87, 33);
+            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_label_set_text(obj, "Device:");
+        }
+        {
+            // device_id_label
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.device_id_label = obj;
+            lv_obj_set_pos(obj, 150, 33);
+            lv_obj_set_size(obj, 135, 16);
+            lv_label_set_text(obj, "Device ID");
+        }
+        {
+            // startup_status_label
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.startup_status_label = obj;
+            lv_obj_set_pos(obj, 5, 207);
+            lv_obj_set_size(obj, 306, 33);
+            lv_label_set_text(obj, "starting...");
+        }
+        {
+            // No Config Needed
+            lv_obj_t *obj = lv_obj_create(parent_obj);
+            objects.no_config_needed = obj;
+            lv_obj_set_pos(obj, 0, 57);
+            lv_obj_set_size(obj, 320, 141);
+            lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
+            lv_obj_set_style_bg_color(obj, lv_color_hex(0xff000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_color(obj, lv_color_hex(0xff00ff00), LV_PART_MAIN | LV_STATE_DEFAULT);
+            {
+                lv_obj_t *parent_obj = obj;
+                {
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    lv_obj_set_pos(obj, -7, -6);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_label_set_text(obj, "WiFi ready:");
+                }
+                {
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    lv_obj_set_pos(obj, -4, 10);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_label_set_text(obj, "IP:");
+                }
+                {
+                    // device_ssid_ready_label
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    objects.device_ssid_ready_label = obj;
+                    lv_obj_set_pos(obj, 81, -6);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_obj_set_style_text_color(obj, lv_color_hex(0xff00ff00), LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_label_set_text(obj, "Device SSID");
+                }
+                {
+                    // device_ip_label
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    objects.device_ip_label = obj;
+                    lv_obj_set_pos(obj, 81, 10);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_obj_set_style_text_color(obj, lv_color_hex(0xff00ff00), LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_label_set_text(obj, "Device SSID");
+                }
+            }
+        }
+        {
+            // Config Needed
+            lv_obj_t *obj = lv_obj_create(parent_obj);
+            objects.config_needed = obj;
+            lv_obj_set_pos(obj, 0, 57);
+            lv_obj_set_size(obj, 320, 141);
+            lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
+            lv_obj_set_style_bg_color(obj, lv_color_hex(0xff000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_color(obj, lv_color_hex(0xffffffff), LV_PART_MAIN | LV_STATE_DEFAULT);
+            {
+                lv_obj_t *parent_obj = obj;
+                {
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    lv_obj_set_pos(obj, -7, -6);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_label_set_text(obj, "WiFi Configuration Needed:");
+                }
+                {
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    lv_obj_set_pos(obj, -4, 10);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_label_set_text(obj, "1. Connect phone/laptop WiFi to:");
+                }
+                {
+                    // device_ssid_label
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    objects.device_ssid_label = obj;
+                    lv_obj_set_pos(obj, 28, 32);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_obj_set_style_text_color(obj, lv_color_hex(0xffffff00), LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_label_set_text(obj, "Device SSID");
+                }
+                {
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    lv_obj_set_pos(obj, -4, 56);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_label_set_text(obj, "2. Open web browser\n3. Go to: 192.168.4.1\n4. Select your WiFi network\n5. Enter password");
+                }
+            }
+        }
+    }
+    
+    tick_screen_setup();
+}
+
+void tick_screen_setup() {
+}
+
+void create_screen_weather() {
+    lv_obj_t *obj = lv_obj_create(0);
+    objects.weather = obj;
     lv_obj_set_pos(obj, 0, 0);
     lv_obj_set_size(obj, 320, 240);
     lv_obj_add_event_cb(obj, action_navigate_settings, LV_EVENT_PRESSED, (void *)0);
@@ -132,10 +261,10 @@ void create_screen_main() {
         }
     }
     
-    tick_screen_main();
+    tick_screen_weather();
 }
 
-void tick_screen_main() {
+void tick_screen_weather() {
 }
 
 void create_screen_settings() {
@@ -218,56 +347,13 @@ void create_screen_settings() {
 void tick_screen_settings() {
 }
 
-void create_screen_startup() {
-    lv_obj_t *obj = lv_obj_create(0);
-    objects.startup = obj;
-    lv_obj_set_pos(obj, 0, 0);
-    lv_obj_set_size(obj, 320, 240);
-    {
-        lv_obj_t *parent_obj = obj;
-        {
-            lv_obj_t *obj = lv_label_create(parent_obj);
-            lv_obj_set_pos(obj, 80, 23);
-            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text(obj, "Aura 2 Setup");
-        }
-        {
-            lv_obj_t *obj = lv_label_create(parent_obj);
-            lv_obj_set_pos(obj, 47, 49);
-            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text(obj, "Device:");
-        }
-        {
-            // device_id_label
-            lv_obj_t *obj = lv_label_create(parent_obj);
-            objects.device_id_label = obj;
-            lv_obj_set_pos(obj, 113, 49);
-            lv_obj_set_size(obj, 165, 16);
-            lv_label_set_text(obj, "Device ID");
-        }
-        {
-            // startup_status_label
-            lv_obj_t *obj = lv_label_create(parent_obj);
-            objects.startup_status_label = obj;
-            lv_obj_set_pos(obj, 7, 177);
-            lv_obj_set_size(obj, 271, 16);
-            lv_label_set_text(obj, "Text");
-        }
-    }
-    
-    tick_screen_startup();
-}
-
-void tick_screen_startup() {
-}
-
 
 
 typedef void (*tick_screen_func_t)();
 tick_screen_func_t tick_screen_funcs[] = {
-    tick_screen_main,
+    tick_screen_setup,
+    tick_screen_weather,
     tick_screen_settings,
-    tick_screen_startup,
 };
 void tick_screen(int screen_index) {
     tick_screen_funcs[screen_index]();
@@ -281,7 +367,7 @@ void create_screens() {
     lv_theme_t *theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), false, LV_FONT_DEFAULT);
     lv_disp_set_theme(dispp, theme);
     
-    create_screen_main();
+    create_screen_setup();
+    create_screen_weather();
     create_screen_settings();
-    create_screen_startup();
 }
