@@ -500,7 +500,7 @@
                   "type": "LVGLLabelWidget",
                   "left": 81,
                   "top": 10,
-                  "width": 87,
+                  "width": 67,
                   "height": 16,
                   "customInputs": [],
                   "customOutputs": [],
@@ -540,7 +540,7 @@
                   },
                   "group": "",
                   "groupIndex": 0,
-                  "text": "Device SSID",
+                  "text": "Device IP",
                   "textType": "literal",
                   "longMode": "WRAP",
                   "recolor": false
@@ -564,7 +564,8 @@
                   "MAIN": {
                     "DEFAULT": {
                       "bg_color": "#FFFFF",
-                      "text_color": "#00ff00"
+                      "text_color": "#00ff00",
+                      "border_color": "#000000"
                     }
                   }
                 }
@@ -790,7 +791,8 @@
                   "MAIN": {
                     "DEFAULT": {
                       "bg_color": "#FFFFF",
-                      "text_color": "#FFFFFF"
+                      "text_color": "#FFFFFF",
+                      "border_color": "#000000"
                     }
                   }
                 }

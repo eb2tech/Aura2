@@ -17,6 +17,7 @@
 #include "forecast_settings.h"
 #include "forecast_mqtt.h"
 #include "forecast_nats.h"
+#include "main.h"
 
 #define XPT2046_IRQ 36  // T_IRQ
 #define XPT2046_MOSI 32 // T_DIN
@@ -317,6 +318,13 @@ void displayFlush(lv_display_t *display, const lv_area_t *area, uint8_t *color_p
   lv_display_flush_ready(display); // Tell LVGL you are ready with the flushing
 }
 
+void forceDisplayUpdate()
+{
+  delay(100);
+  lv_tick_inc(100);
+  lv_timer_handler();
+}
+
 void touchpadRead(lv_indev_t *indev, lv_indev_data_t *data)
 {
   if (touchscreen.touched())
@@ -367,7 +375,6 @@ bool isWiFiConfigValid()
   }
 
   Serial.println("Testing WiFi connection to: " + WiFi.SSID());
-//  Log.infoln("Testing WiFi connection to: %s", WiFi.SSID().c_str());
 
   // Try to connect with timeout
   WiFi.begin(); // Use saved credentials
@@ -397,18 +404,13 @@ bool isWiFiConfigValid()
 
 void updateWiFiSplashStatus(const String &status, uint16_t color = TFT_GREEN)
 {
-  delay(100);
-  lv_tick_inc(100);
-  lv_timer_handler();
+  forceDisplayUpdate();
 
   Serial.println(status);
   lv_label_set_text(objects.startup_status_label, status.c_str());
   lv_obj_set_style_text_color(objects.startup_status_label, lv_color_hex(color), LV_PART_MAIN | LV_STATE_DEFAULT);
 
-  delay(100);
-
-  lv_tick_inc(100);
-  lv_timer_handler();
+  forceDisplayUpdate();
 }
 
 void showWiFiSplashScreen()
@@ -441,12 +443,9 @@ void showWiFiSplashScreen()
     updateWiFiSplashStatus(status, TFT_GREEN);
   }
 
-  // Force display update
-  lv_tick_inc(100);
-  lv_timer_handler();
+  forceDisplayUpdate();
 
   Serial.println("WiFi splash screen displayed");
-  delay(100);
 }
 
 // WiFiManager callback functions for splash screen updates
@@ -558,8 +557,11 @@ void setupUi()
     lv_obj_set_style_text_align(forecast_temp_label[row], LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_grid_cell(forecast_temp_label[row], LV_GRID_ALIGN_CENTER, col, 1, LV_GRID_ALIGN_CENTER, row, 1);
   }
+}
 
-  // Because LVGL timers are used, we set up periodic update timers here
+void setupTimers()
+{
+  // Set up LVGL timers for periodic updates
   auto clock_timer = lv_timer_create(updateClock, 10 * 1000, NULL);            // Update clock every 10 seconds
   auto weather_timer = lv_timer_create(updateWeather, 10 * 60 * 1000, NULL);   // Update weather every 10 minutes
   auto dim_timer = lv_timer_create(checkDimTime, 1 * 60 * 1000, NULL);         // Check dim time every minute
@@ -743,12 +745,12 @@ void setup()
   setupMqtt();
   setupClock();
   setupWebserver();
+  setupTimers();
 
   loadScreen(SCREEN_ID_WEATHER);
   updateWeather(NULL);
 
   Log.infoln("UI initialized and ready");
-
   Log.infoln("Setup complete");
 }
 
