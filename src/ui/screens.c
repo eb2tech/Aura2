@@ -49,7 +49,7 @@ void create_screen_main() {
         {
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.obj0 = obj;
-            lv_obj_set_pos(obj, 7, 142);
+            lv_obj_set_pos(obj, 9, 153);
             lv_obj_set_size(obj, 82, 16);
             lv_obj_add_event_cb(obj, action_navigate_settings, LV_EVENT_PRESSED, (void *)0);
             lv_obj_set_style_text_color(obj, lv_color_hex(0xffe4ffff), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -153,7 +153,7 @@ void create_screen_settings() {
         {
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.obj1 = obj;
-            lv_obj_set_pos(obj, 77, 17);
+            lv_obj_set_pos(obj, 83, 12);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_obj_set_style_text_color(obj, lv_color_hex(0xffffffff), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_font(obj, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -162,7 +162,7 @@ void create_screen_settings() {
         {
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.obj2 = obj;
-            lv_obj_set_pos(obj, 65, 38);
+            lv_obj_set_pos(obj, 72, 36);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_obj_set_style_text_color(obj, lv_color_hex(0xffffffff), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_font(obj, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -172,22 +172,25 @@ void create_screen_settings() {
             // ipv4_label
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.ipv4_label = obj;
-            lv_obj_set_pos(obj, 56, 82);
-            lv_obj_set_size(obj, 230, 22);
+            lv_obj_set_pos(obj, 87, 71);
+            lv_obj_set_size(obj, 147, 22);
+            lv_obj_set_style_text_font(obj, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_label_set_text(obj, "http://192.168.1.255");
         }
         {
             lv_obj_t *obj = lv_label_create(parent_obj);
-            lv_obj_set_pos(obj, 150, 109);
+            lv_obj_set_pos(obj, 150, 104);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_obj_set_style_text_font(obj, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_label_set_text(obj, "or");
         }
         {
             // mdns_label
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.mdns_label = obj;
-            lv_obj_set_pos(obj, 47, 143);
-            lv_obj_set_size(obj, 248, 22);
+            lv_obj_set_pos(obj, 75, 133);
+            lv_obj_set_size(obj, 170, 22);
+            lv_obj_set_style_text_font(obj, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_label_set_text(obj, "http://aura2-wxyz.local");
         }
         {
@@ -202,6 +205,7 @@ void create_screen_settings() {
                     lv_obj_set_pos(obj, 0, 0);
                     lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
                     lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_obj_set_style_text_font(obj, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
                     lv_label_set_text(obj, "Close");
                 }
             }
@@ -214,12 +218,56 @@ void create_screen_settings() {
 void tick_screen_settings() {
 }
 
+void create_screen_startup() {
+    lv_obj_t *obj = lv_obj_create(0);
+    objects.startup = obj;
+    lv_obj_set_pos(obj, 0, 0);
+    lv_obj_set_size(obj, 320, 240);
+    {
+        lv_obj_t *parent_obj = obj;
+        {
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            lv_obj_set_pos(obj, 80, 23);
+            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_label_set_text(obj, "Aura 2 Setup");
+        }
+        {
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            lv_obj_set_pos(obj, 47, 49);
+            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_label_set_text(obj, "Device:");
+        }
+        {
+            // device_id_label
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.device_id_label = obj;
+            lv_obj_set_pos(obj, 113, 49);
+            lv_obj_set_size(obj, 165, 16);
+            lv_label_set_text(obj, "Device ID");
+        }
+        {
+            // startup_status_label
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.startup_status_label = obj;
+            lv_obj_set_pos(obj, 7, 177);
+            lv_obj_set_size(obj, 271, 16);
+            lv_label_set_text(obj, "Text");
+        }
+    }
+    
+    tick_screen_startup();
+}
+
+void tick_screen_startup() {
+}
+
 
 
 typedef void (*tick_screen_func_t)();
 tick_screen_func_t tick_screen_funcs[] = {
     tick_screen_main,
     tick_screen_settings,
+    tick_screen_startup,
 };
 void tick_screen(int screen_index) {
     tick_screen_funcs[screen_index]();
@@ -235,4 +283,5 @@ void create_screens() {
     
     create_screen_main();
     create_screen_settings();
+    create_screen_startup();
 }
