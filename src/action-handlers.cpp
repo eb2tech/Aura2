@@ -9,7 +9,7 @@ extern "C" void action_toggle_forecast(lv_event_t *e) {
 }
 
 extern "C" void action_navigate_home(lv_event_t *e) {
-    loadScreen(SCREEN_ID_MAIN);
+    loadScreen(SCREEN_ID_WEATHER);
 }
 
 extern "C" void action_navigate_settings(lv_event_t *e) {

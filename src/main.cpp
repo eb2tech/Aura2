@@ -17,6 +17,7 @@
 #include "forecast_settings.h"
 #include "forecast_mqtt.h"
 #include "forecast_nats.h"
+#include "main.h"
 
 #define XPT2046_IRQ 36  // T_IRQ
 #define XPT2046_MOSI 32 // T_DIN
@@ -317,6 +318,13 @@ void displayFlush(lv_display_t *display, const lv_area_t *area, uint8_t *color_p
   lv_display_flush_ready(display); // Tell LVGL you are ready with the flushing
 }
 
+void forceDisplayUpdate()
+{
+  delay(100);
+  lv_tick_inc(100);
+  lv_timer_handler();
+}
+
 void touchpadRead(lv_indev_t *indev, lv_indev_data_t *data)
 {
   if (touchscreen.touched())
@@ -367,7 +375,6 @@ bool isWiFiConfigValid()
   }
 
   Serial.println("Testing WiFi connection to: " + WiFi.SSID());
-  Log.infoln("Testing WiFi connection to: %s", WiFi.SSID().c_str());
 
   // Try to connect with timeout
   WiFi.begin(); // Use saved credentials
@@ -385,101 +392,60 @@ bool isWiFiConfigValid()
   bool connected = (WiFi.status() == WL_CONNECTED);
   if (connected)
   {
-    Log.infoln("WiFi connection test successful");
+    Serial.println("WiFi connection test successful");
   }
   else
   {
-    Log.infoln("WiFi connection test failed - status: %s", String(WiFi.status()).c_str());
+    Serial.println("WiFi connection test failed - status: " + String(WiFi.status()));
   }
 
   return connected;
 }
 
+void updateWiFiSplashStatus(const String &status, uint16_t color = TFT_GREEN)
+{
+  forceDisplayUpdate();
+
+  Serial.println(status);
+  lv_label_set_text(objects.startup_status_label, status.c_str());
+  lv_obj_set_style_text_color(objects.startup_status_label, lv_color_hex(color), LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  forceDisplayUpdate();
+}
+
 void showWiFiSplashScreen()
 {
-  auto rotation = tft.getRotation();
-  Log.infoln("Display rotation: %d", rotation);
+  Serial.println("Showing WiFi configuration splash screen...");
 
-  // tft.setRotation(1); // Landscape
-
-  // Clear screen with black background
-  tft.fillScreen(TFT_BLACK);
-
-  // Set text properties
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextWrap(true);
-
-  // Title
-  tft.setTextSize(2);
-  tft.setCursor(30, 20);
-  tft.println("Aura2 Setup");
-
-  // Device ID
-  tft.setTextSize(1);
-  tft.setCursor(10, 55);
-  tft.setTextColor(TFT_CYAN, TFT_BLACK);
-  tft.println("Device: " + getDeviceIdentifier());
+  String deviceIdLabelText = getDeviceIdentifier();
+  lv_label_set_text(objects.device_id_label, deviceIdLabelText.c_str());
 
   if (!isWiFiConfigValid())
   {
-    // Main instructions
-    tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.setCursor(10, 80);
-    tft.println("WiFi configuration needed:");
+    Serial.println("WiFi configuration is not valid, starting AP mode");
 
-    tft.setCursor(10, 100);
-    tft.println("1. Connect phone/laptop WiFi to:");
+    lv_obj_add_flag(objects.no_config_needed, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(objects.config_needed, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(objects.device_ssid_label, deviceIdLabelText.c_str());
 
-    tft.setTextColor(TFT_YELLOW, TFT_BLACK);
-    tft.setCursor(20, 115);
-    tft.println("   \"" + getDeviceIdentifier() + "\"");
-
-    tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.setCursor(10, 135);
-    tft.println("2. Open web browser");
-
-    tft.setCursor(10, 150);
-    tft.print("3. Go to: ");
-    tft.setTextColor(TFT_CYAN, TFT_BLACK);
-    tft.println("192.168.4.1");
-
-    tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.setCursor(10, 170);
-    tft.println("4. Select your WiFi network");
-
-    tft.setCursor(10, 185);
-    tft.println("5. Enter password");
-
-    // Status at bottom
-    tft.setTextColor(TFT_GREEN, TFT_BLACK);
-    tft.setCursor(10, 210);
-    tft.println("Starting WiFi hotspot...");
+    updateWiFiSplashStatus("Starting WiFi hotspot...", TFT_GREEN);
   }
   else
   {
-    tft.setTextColor(TFT_GREEN, TFT_BLACK);
-    tft.setCursor(10, 80);
-    tft.println("WiFi ready: " + WiFi.SSID());
-    tft.setCursor(10, 100);
-    tft.println("IP: " + WiFi.localIP().toString());
+    Serial.println("WiFi configuration is valid, connecting to WiFi");
+    
+    lv_obj_add_flag(objects.config_needed, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(objects.no_config_needed, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(objects.device_ssid_ready_label, WiFi.SSID().c_str());
+    lv_label_set_text(objects.device_ip_label, WiFi.localIP().toString().c_str());
+
+    String status = "WiFi ready: " + WiFi.SSID() + "\nIP: " + WiFi.localIP().toString();
+    updateWiFiSplashStatus(status, TFT_GREEN);
   }
 
-  // Force display update
-  delay(100);
-}
+  forceDisplayUpdate();
 
-void updateWiFiSplashStatus(const String &status, uint16_t color = TFT_GREEN)
-{
-  // Clear status area
-  tft.fillRect(10, 210, 300, 20, TFT_BLACK);
-
-  // Update status
-  tft.setTextColor(color, TFT_BLACK);
-  tft.setTextSize(1);
-  tft.setCursor(10, 210);
-  tft.println(status);
-
-  delay(100);
+  Serial.println("WiFi splash screen displayed");
 }
 
 // WiFiManager callback functions for splash screen updates
@@ -497,13 +463,14 @@ void onWiFiManagerConnected()
 
 void setupWifi()
 {
-  Log.infoln("Connecting to WiFi...");
+  Serial.println("Connecting to WiFi...");
 
   // Check if already connected
   if (WiFi.status() == WL_CONNECTED)
   {
-    Log.infoln("Already connected to WiFi");
-    Log.info("IP address: %s", WiFi.localIP().toString().c_str());
+    Serial.println("Already connected to WiFi");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
     return;
   }
 
@@ -524,7 +491,7 @@ void setupWifi()
   if (!wifiManager.autoConnect(getDeviceIdentifier().c_str()))
   {
     updateWiFiSplashStatus("WiFi setup timeout...", TFT_RED);
-    Log.infoln("Failed to connect and hit timeout");
+    Serial.println("Failed to connect and hit timeout");
     delay(3000);
     // Reset and try again
     ESP.restart();
@@ -533,20 +500,22 @@ void setupWifi()
   {
     // Connected successfully
     updateWiFiSplashStatus("WiFi connected successfully...", TFT_GREEN);
-    Log.infoln("WiFi connected");
-    Log.info("IP address: %s", WiFi.localIP().toString().c_str());
+    Serial.println("WiFi connected");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
     delay(2000); // Show success message briefly
   }
 
   if (saveConfigCalledShouldReboot)
   {
     updateWiFiSplashStatus("Rebooting to apply config...", TFT_YELLOW);
-    Log.infoln("Rebooting to apply new configuration...");
+    Serial.println("Rebooting to apply new configuration...");
     delay(2000);
     ESP.restart();
   }
 
-  Log.infoln("Connected to WiFi: %s", WiFi.localIP().toString().c_str());
+  Serial.print("Connected to WiFi: ");
+  Serial.println(WiFi.localIP());
 }
 
 void setupUi()
@@ -588,8 +557,11 @@ void setupUi()
     lv_obj_set_style_text_align(forecast_temp_label[row], LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_grid_cell(forecast_temp_label[row], LV_GRID_ALIGN_CENTER, col, 1, LV_GRID_ALIGN_CENTER, row, 1);
   }
+}
 
-  // Because LVGL timers are used, we set up periodic update timers here
+void setupTimers()
+{
+  // Set up LVGL timers for periodic updates
   auto clock_timer = lv_timer_create(updateClock, 10 * 1000, NULL);            // Update clock every 10 seconds
   auto weather_timer = lv_timer_create(updateWeather, 10 * 60 * 1000, NULL);   // Update weather every 10 minutes
   auto dim_timer = lv_timer_create(checkDimTime, 1 * 60 * 1000, NULL);         // Check dim time every minute
@@ -684,23 +656,6 @@ void setupLittleFS()
     {
       Serial.println("VFS test: FAILED to open /littlefs/index.html via fopen");
     }
-
-    // List images directory
-    File root = LittleFS.open("/images");
-    if (root && root.isDirectory())
-    {
-      Serial.println("Contents of /images:");
-      File file = root.openNextFile();
-      while (file)
-      {
-        Serial.printf("  - %s (%u bytes)\n", file.name(), (uint32_t)file.size());
-        file = root.openNextFile();
-      }
-    }
-    else
-    {
-      Serial.println("FAILED to open /images directory");
-    }
   }
 }
 
@@ -708,8 +663,6 @@ void setup()
 {
   Serial.begin(115200);
   Serial.println("Aura2 Starting...");
-
-  setupLittleFS();
 
   // Load saved preferences early so all systems use current data
   preferences.begin("aura2", false);
@@ -735,9 +688,6 @@ void setup()
   natsServer = preferences.getString("nats_server", natsServer);
   natsUser = preferences.getString("nats_user", natsUser);
   natsPassword = preferences.getString("nats_password", natsPassword);
-
-  // Initialize logging early
-  setupLogging();
 
   // Initialize TFT display hardware
   tft.init();
@@ -787,15 +737,20 @@ void setup()
   lv_indev_set_read_cb(indev_touchpad, touchpadRead);
 
   // Set up everything else
+  setupUi();
   setupWifi();
+  setupLittleFS();
+  setupLogging();
   setupMdns();
   setupMqtt();
-  setupUi();
   setupClock();
   setupWebserver();
+  setupTimers();
+
+  loadScreen(SCREEN_ID_WEATHER);
+  updateWeather(NULL);
 
   Log.infoln("UI initialized and ready");
-
   Log.infoln("Setup complete");
 }
 
