@@ -2,7 +2,91 @@
 
 Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
-Aura is an ESP32-based weather widget that runs on ESP32-2432S028R ILI9341 devices with a 2.8" screen (sometimes called "CYD" or Cheap Yellow Display). This is a hardware-specific PlatformIO project that requires physical ESP32 hardware to build and test.
+## Project overview
+
+- Aura2 is a landscape-layout weather widget firmware for the CYD board.
+- It is written primarily in C and built with PlatformIO in Visual Studio Code.
+- The UI is rendered with LVGL, with layout defined as much as possible in EEZ Studio.
+- The device integrates with Home Assistant via MQTT and supports WiFi provisioning using SoftAP.
+
+## Goals
+
+- Keep the firmware easy to iterate on while experimenting with:
+  - LVGL-based UI layouts generated from EEZ Studio.
+  - MQTT-based integration with Home Assistant.
+  - WiFi provisioning flows using SoftAP.
+- Prefer clarity and maintainability over micro-optimizations unless explicitly noted.
+
+## Code conventions
+
+- **Language:** C++ is the primary language; follow existing style in `src/` and `lib/`.
+- **Structure:** Prefer small, focused modules over large monolithic files.
+- **Naming:**
+  - Use descriptive names for UI components and screens (e.g., `weather_screen`, `status_bar`).
+  - For LVGL objects, keep a consistent prefix per screen or feature.
+  - Use descriptive function names that indicate their purpose (e.g., `create_weather_screen()`, `update_time_label()`).
+- **Error handling:** Check return values from hardware, network, and LVGL calls; log or surface failures where possible.
+- Follow existing Arduino/C++ conventions
+- Comment complex LVGL UI creation code
+- **Serial Debug Messages**: Use calm, professional tone for Serial.println() statements. Avoid excessive exclamation points. Prefer "WiFi connected" over "WiFi connected!" and "Setup complete" over "Setup complete!"
+- Prefer Log.infoln() for logging instead of Serial.println() for consistency
+
+## UI and LVGL
+
+- Treat EEZ Studio as the source of truth for layout where possible.
+- When editing generated code:
+  - Avoid manual changes to files clearly marked as generated.
+  - Prefer extension points or wrapper functions in `src/` for custom behavior.
+- Keep UI logic (event handlers, state updates) separate from layout definitions.
+- Layout is done in EEZ Studio and is considered primary. If generated needs modification, consider if it can be done in EEZ Studio first and modify the source .eez-project file instead of the generated code.
+- Edit `include/Setup_ESP32_2432S028R_ILI9341.h` for display driver settings
+- Current config: ILI9341_2_DRIVER, 240x320 resolution, specific pin mappings
+- Edit `include/lv_conf.h` for LVGL library settings (if needed)
+- Current config: 16-bit color depth, ESP32 optimizations
+
+## Networking, WiFi, and MQTT
+
+- WiFi provisioning is done via SoftAP; keep related logic cohesive and well-documented.
+- MQTT topics and payloads should remain consistent with Home Assistant conventions used in this project.
+- When adding new MQTT features:
+  - Reuse existing connection and reconnection patterns.
+  - Centralize topic definitions and avoid scattering string literals.
+
+## Testing and experimentation
+
+- Use the `test/` folder for any automated tests or small harnesses.
+- For manual testing, rely on Serial Monitor output and the device's display for feedback.
+
+## Files to treat as architectural references
+
+- `README.md` — high-level description and build instructions.
+- `ARCHITECTURE.md` — over-arching architectural details and system overview.
+- `aura2.eez-project` — UI layout source (do not modify blindly; respect EEZ Studio workflows).
+- `platformio.ini` — build configuration and environment definitions.
+
+## Prerequisites
+- ESP32-2432S028R ILI9341 device with 2.8" screen (CYD/Cheap Yellow Display hardware)
+- PlatformIO Core or VS Code with PlatformIO extension installed
+- All required libraries will be auto-installed via platformio.ini
+
+## Architectural decisions and history
+
+- Architectural decision records (ADRs) live under `/architecture/adr`.
+- When a change:
+  - Introduces a new tool or framework,
+  - Changes how UI is structured,
+  - Alters integration with Home Assistant or WiFi provisioning,
+  create or update an ADR instead of embedding long explanations in comments.
+
+Key ADRs (see `/architecture/adr`):
+
+- `0001-use-platformio-for-firmware-builds.md`
+- `0002-use-eez-studio-for-ui-layout.md`
+- `0003-integrate-with-home-assistant-via-mqtt.md`
+
+When in doubt, prefer:
+- Clear separation between UI layout, UI logic, networking, and hardware abstraction.
+- Small, composable functions over deeply nested logic.
 
 ## CRITICAL LIMITATIONS
 
@@ -12,89 +96,17 @@ Aura is an ESP32-based weather widget that runs on ESP32-2432S028R ILI9341 devic
 
 **NO AUTOMATED TESTING**: There are no unit tests, integration tests, or CI/CD pipelines. All validation must be done manually on the hardware.
 
-## Working Effectively
-
-### Prerequisites
-- ESP32-2432S028R ILI9341 device with 2.8" screen (CYD/Cheap Yellow Display hardware)
-- PlatformIO Core or VS Code with PlatformIO extension installed
-- All required libraries will be auto-installed via platformio.ini
-
-### PlatformIO Configuration
-The project is pre-configured in `platformio.ini` with these settings:
-- Board: "esp32dev"
-- Framework: "arduino"
-- Partition Scheme: "huge_app.csv"
-- Monitor Speed: 115200 baud
-- Flash Size: 4MB
-
-### Required Libraries (Auto-installed)
-These libraries are automatically installed via `platformio.ini`:
-- ArduinoJson 7.4.2
-- lvgl 9.4.0
-- TFT_eSPI 2.5.43
-- WiFiManager 2.0.17
-- XPT2046_Touchscreen 1.4 (from GitHub)
-
 **CRITICAL CONFIGURATION STEP**: Configuration files are included in the project:
 1. TFT_eSPI configuration: `include/Setup_ESP32_2432S028R_ILI9341.h`
 2. LVGL configuration: `include/lv_conf.h` (if needed)
 3. Build flags in `platformio.ini` handle automatic inclusion
 
-### Project Setup
-1. Clone or copy the project to your desired location
-2. Open project folder in VS Code with PlatformIO extension, or use PlatformIO CLI
-3. Connect ESP32 hardware via USB
-4. PlatformIO will auto-install all dependencies on first build
-
-### Build Process
-**Using VS Code:**
-1. Open project in VS Code
-2. Click "Build" in PlatformIO toolbar (or Ctrl+Alt+B) - takes 2-3 minutes. NEVER CANCEL.
-3. Click "Upload" to flash to device (or Ctrl+Alt+U) - takes 1-2 minutes. NEVER CANCEL.
-4. Click "Serial Monitor" to view debug output (115200 baud)
-
 **IMPORTANT: PlatformIO CLI is NOT available in PATH**
 - PlatformIO CLI commands (`pio run`, `platformio run`) will NOT work in terminal
 - All builds, uploads, and monitoring MUST be done through VS Code PlatformIO extension UI
-- Use the PlatformIO toolbar buttons or keyboard shortcuts exclusively
-- Do NOT attempt to run PlatformIO commands in terminal - they will fail
+- PlatformIO CLI can work if you provide the full path to the executable installed for the user, but this is not recommended for ease of use
 
 **Expected Build Time**: 2-3 minutes for compilation, 1-2 minutes for upload. NEVER CANCEL builds or uploads.
-
-## Validation
-
-### Hardware Testing Scenarios
-After successfully uploading firmware, test these complete scenarios:
-
-1. **Initial Setup Flow**:
-   - Power on device
-   - Connect to "Aura" WiFi network from phone/laptop
-   - Navigate to http://192.168.4.1 in browser
-   - Configure WiFi credentials
-   - Verify device connects to WiFi and displays weather
-
-2. **Weather Display**:
-   - Verify current weather displays with icon and temperature
-   - Touch screen to access settings
-   - Verify 7-day forecast and hourly forecast views work
-
-3. **Settings Configuration**:
-   - Test location search and selection
-   - Test brightness adjustment
-   - Test language switching (English, Spanish, German, French)
-   - Test temperature unit toggle (°C/°F)
-   - Test 12/24 hour time format toggle
-
-4. **WiFi Reset**:
-   - Test WiFi reset functionality
-   - Verify device returns to captive portal mode
-
-### Code Validation
-- Always run `pio run` (build) before making changes
-- Check Serial Monitor output for runtime errors
-- Use `extract_unicode_chars.py` when modifying multilingual strings
-
-## Common Tasks
 
 ### Key File Locations
 ```
@@ -106,8 +118,6 @@ Repository Structure:
 │   ├── main.cpp                 # Main Arduino application
 │   ├── forecast_weather.cpp     # Weather logic and image selection (SPIFFS based)
 │   ├── extract_unicode_chars.py # Unicode analysis utility
-│   ├── lv_font_*.c              # LVGL font files
-│   └── translations.h           # Multilingual string definitions
 ├── include/
 │   ├── Setup_ESP32_2432S028R_ILI9341.h  # TFT_eSPI configuration
 │   └── lv_conf.h                # LVGL configuration (FS enabled, limited fonts)
@@ -115,53 +125,12 @@ Repository Structure:
 └── partitions.csv               # Partition table for 4MB ESP32 with dual OTA slots
 ```
 
-### Modifying Weather Display
-- Main UI creation: `create_ui()` function in src/main.cpp
-- Weather data fetching: `fetch_and_update_weather()` function
-- Icon selection: `choose_image()` and `choose_icon()` functions (points to "S:/images/xxx.bin")
-
-### Adding New Images (Preferred Workflow)
-1. **Source**: Use a high-quality **PNG** image (e.g., 100x100 for main weather icon).
-2. **Convert**: Use the [LVGL Online Image Converter](https://lvgl.io/tools/imageconverter).
-   - **Version**: Select **LVGL v9**.
-   - **Color format**: Select **CF_RGB565** or **CF_RGB565A8** (if transparency is needed).
-   - **Output**: Choose **Binary**.
-3. **Deploy**:
-   - Save the `.bin` to `data/images/` inside the workspace.
-   - Use a short, descriptive name (max 12 chars if possible, e.g., `sunny.bin`).
-4. **Code Update**:
-   - Update `choose_image()` or `choose_icon()` in `forecast_weather.cpp` to use the new filename.
-   - **CRITICAL**: Use the `S:/images/` prefix (e.g., `S:/images/sunny.bin`).
-5. **Flash**: Run the **Upload Filesystem Image** task in PlatformIO to sync the `data/` folder to LittleFS.
-
-### Legacy Asset Conversion (Deprecated)
-The `images_backup` folder and `convert_images.py` script were used to transition legacy C-array icons to LVGL 9 binaries. They are no longer part of the active development workflow but documented the 12-byte header requirement for LVX binaries (`0x19` magic, `cf_id`, `0`, `w`, `h`, `stride`, `0`).
-
-### Adding New Languages
-1. Add language enum to `enum Language` in src/translations.h
-2. Create new `LocalizedStrings` structure
-3. Update language switching logic in settings
-4. Run `python3 src/extract_unicode_chars.py src/main.cpp` to get required Unicode characters
-5. Regenerate LVGL fonts with new character set if needed
-
 ### Modifying Display Configuration
-- Edit `include/Setup_ESP32_2432S028R_ILI9341.h` for display driver settings
-- Current config: ILI9341_2_DRIVER, 240x320 resolution, specific pin mappings
-- Edit `include/lv_conf.h` for LVGL library settings (if needed)
-- Current config: 16-bit color depth, ESP32 optimizations
 
 ### Font Management
 - Custom fonts in `src/lv_font_*.c` files
 - Use LVGL Font Converter tool to generate new fonts
 - Include Unicode characters: `°¿ÉÊÍÓÜßáäçèéíñóöúûü‐→` (from extract_unicode_chars.py)
-
-## Unicode Character Analysis
-Use the included Python utility to analyze Unicode requirements:
-```bash
-cd /path/to/Aura
-python3 src/extract_unicode_chars.py src/main.cpp
-```
-This identifies all non-ASCII characters needed for LVGL font generation.
 
 ## Debugging
 
@@ -192,97 +161,9 @@ The TFT_eSPI configuration defines these pin connections:
 
 ## Project Architecture
 
-### Main Components
-- **src/main.cpp**: Main application logic, UI, and weather fetching
-- **data/index.html**: Web interface for remote device configuration and settings
-- **LVGL**: UI framework for ESP32 with touchscreen support
-- **TFT_eSPI**: Display driver for ILI9341 screens
-- **WiFiManager**: Captive portal for WiFi configuration
-- **ArduinoJson**: Weather API response parsing
-- **XPT2046_Touchscreen**: Touch input handling
-
-### Key Functions
-- `setup()`: Initialize hardware, WiFi, display, and UI
-- `loop()`: Main application loop with LVGL updates
-- `create_ui()`: Build the main weather display interface
-- `fetch_and_update_weather()`: Get weather data from API
-- `create_settings_window()`: Settings screen with user preferences
-
 ### Weather Data Source
 - Uses Open-Meteo API for weather data
 - Geocoding API for location search
 - No API key required
 - Updates every 10 minutes (600000ms)
 
-## Development Guidelines
-
-### Making Changes
-1. Always test on actual hardware
-2. Use Serial Monitor for debugging
-3. Keep builds under partition size limit (huge_app.csv)
-4. Test all language variants when modifying UI text
-5. Verify touchscreen functionality after UI changes
-
-### Code Style
-- Follow existing Arduino/C++ conventions
-- Use descriptive function names
-- Comment complex LVGL UI creation code
-- Keep string literals in LocalizedStrings structures
-- **Serial Debug Messages**: Use calm, professional tone for Serial.println() statements. Avoid excessive exclamation points. Prefer "WiFi connected" over "WiFi connected!" and "Setup complete" over "Setup complete!"
-- Prefer Log.infoln() for logging instead of Serial.println() for consistency
-
-### Memory Management
-- ESP32 has limited RAM - be careful with large images/fonts
-- Use PROGMEM for static data when possible
-- Monitor Serial output for memory allocation failures
-
-## NATS Logging
-
-The Aura2 project uses NATS for remote logging via the `forecast_nats.cpp` module. This allows centralized collection of log messages from the device to an external NATS server.
-
-### NATS Log Message Format
-Log messages are published as JSON to the subject `aura2/logs/<device-id>` with the following structure:
-```json
-{
-  "timestamp": 1706858400,
-  "message": "Log message text",
-  "message_length": 17
-}
-```
-- **timestamp**: Unix timestamp (seconds since epoch) captured using `time(nullptr)`. NTP is enabled via `configTime()` at startup, ensuring externally-correct timestamps for log message recipients.
-- **message**: The log message text
-- **message_length**: Character count of the message
-
-### Usage
-- Enable NATS by configuring the NATS server URL in settings
-- Log messages are published asynchronously via `publish_log_message(const char *message)`
-- Only publishes when NATS connection is active (`natsConnected` flag)
-- Messages are published to a per-device subject for easy filtering
-
-### NTP Configuration
-NTP is automatically configured during WiFi initialization in `main.cpp`:
-- Uses `pool.ntp.org` and `time.nist.gov` as NTP servers
-- Respects the configured time zone offset for local time operations
-- `time(nullptr)` returns Unix timestamp in UTC; local time obtained via `getLocalTime()` when needed
-
-## Troubleshooting Build Issues
-
-### Library Version Conflicts
-- Libraries are managed by platformio.ini - modify versions there if needed
-- Clear PlatformIO cache: `pio system prune` if needed
-- Check for conflicting library dependencies
-
-### Configuration File Issues
-- Ensure include/Setup_ESP32_2432S028R_ILI9341.h exists and is correct
-- Check that build_flags in platformio.ini include the correct files
-- Verify no conflicting definitions between configuration files
-
-### PlatformIO-Specific Issues
-- **collect2.exe error**: Usually memory/linking issue - check partition scheme
-- **Upload fails**: Check USB connection and board selection
-- **Dependencies not installing**: Clear .pio folder and rebuild
-
-### Hardware-Specific Problems
-- Only works with ESP32-2432S028R ILI9341 devices
-- Different display modules may require Setup file modifications
-- Touch calibration may need adjustment for different screens
