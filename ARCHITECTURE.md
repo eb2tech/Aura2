@@ -26,8 +26,4 @@ Aura2 is a firmware project for a CYD-based landscape weather widget. It uses:
 
 ## Decision history
 
-See `/architecture/adr` for detailed decisions:
-
-- `0001-use-platformio-for-firmware-builds.md`
-- `0002-use-eez-studio-for-ui-layout.md`
-- `0003-integrate-with-home-assistant-via-mqtt.md`
+All significant architectural decisions are documented as Architecture Decision Records (ADRs) in the [architecture/adr/](architecture/adr/) directory. Always refer to these documents when making changes that affect the system structure or core technologies.
