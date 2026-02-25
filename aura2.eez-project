@@ -563,7 +563,7 @@
                 "definition": {
                   "MAIN": {
                     "DEFAULT": {
-                      "bg_color": "#FFFFF",
+                      "bg_color": "#000000",
                       "text_color": "#00ff00",
                       "border_color": "#000000"
                     }
@@ -790,7 +790,7 @@
                 "definition": {
                   "MAIN": {
                     "DEFAULT": {
-                      "bg_color": "#FFFFF",
+                      "bg_color": "#000000",
                       "text_color": "#FFFFFF",
                       "border_color": "#000000"
                     }
@@ -1094,10 +1094,10 @@
             {
               "objID": "7f7a3b32-e3a5-4f3e-800c-a6b2fcbe3426",
               "type": "LVGLLabelWidget",
-              "left": 13,
-              "top": 200,
+              "left": 6,
+              "top": 192,
               "width": 87,
-              "height": 28,
+              "height": 18,
               "customInputs": [],
               "customOutputs": [],
               "style": {
@@ -1320,6 +1320,57 @@
               },
               "group": "",
               "groupIndex": 0
+            },
+            {
+              "objID": "d284dcf5-e7bc-4c08-ac67-5b34b337aee0",
+              "type": "LVGLLabelWidget",
+              "left": 6,
+              "top": 220,
+              "width": 85,
+              "height": 16,
+              "customInputs": [],
+              "customOutputs": [],
+              "style": {
+                "objID": "42762ba4-e165-45d8-f7c2-5f58ccb82187",
+                "useStyle": "default",
+                "conditionalStyles": [],
+                "childStyles": []
+              },
+              "timeline": [],
+              "eventHandlers": [],
+              "identifier": "current_city_label",
+              "leftUnit": "px",
+              "topUnit": "px",
+              "widthUnit": "px",
+              "heightUnit": "px",
+              "children": [],
+              "widgetFlags": "CLICK_FOCUSABLE|GESTURE_BUBBLE|PRESS_LOCK|SCROLLABLE|SCROLL_CHAIN_HOR|SCROLL_CHAIN_VER|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_WITH_ARROW|SNAPPABLE",
+              "hiddenFlagType": "literal",
+              "clickableFlagType": "literal",
+              "flagScrollbarMode": "",
+              "flagScrollDirection": "",
+              "scrollSnapX": "",
+              "scrollSnapY": "",
+              "checkedStateType": "literal",
+              "disabledStateType": "literal",
+              "states": "",
+              "localStyles": {
+                "objID": "7cfd170c-b58d-41e5-92ed-b01bc05d9ae5",
+                "definition": {
+                  "MAIN": {
+                    "DEFAULT": {
+                      "text_align": "CENTER",
+                      "text_color": "#e4ffff"
+                    }
+                  }
+                }
+              },
+              "group": "",
+              "groupIndex": 0,
+              "text": "City",
+              "textType": "literal",
+              "longMode": "WRAP",
+              "recolor": false
             }
           ],
           "widgetFlags": "CLICKABLE|PRESS_LOCK|CLICK_FOCUSABLE|GESTURE_BUBBLE|SNAPPABLE|SCROLLABLE|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_CHAIN_HOR|SCROLL_CHAIN_VER",
