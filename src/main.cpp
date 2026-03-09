@@ -294,6 +294,7 @@ void updateClock(lv_timer_t *timer)
   }
 
   lv_label_set_text(objects.current_time_label, buf);
+  lv_label_set_text(objects.current_city_label, weather_city.c_str());
 }
 
 // LVGL log callback

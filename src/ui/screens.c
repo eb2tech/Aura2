@@ -205,8 +205,8 @@ void create_screen_weather() {
             // current_time_label
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.current_time_label = obj;
-            lv_obj_set_pos(obj, 13, 200);
-            lv_obj_set_size(obj, 87, 28);
+            lv_obj_set_pos(obj, 6, 192);
+            lv_obj_set_size(obj, 87, 18);
             lv_obj_add_event_cb(obj, action_navigate_settings, LV_EVENT_PRESSED, (void *)0);
             lv_obj_set_style_text_color(obj, lv_color_hex(0xff14536a), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_font(obj, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -260,6 +260,16 @@ void create_screen_weather() {
                     lv_label_set_text(obj, "SEVEN DAY FORECAST");
                 }
             }
+        }
+        {
+            // current_city_label
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.current_city_label = obj;
+            lv_obj_set_pos(obj, 6, 220);
+            lv_obj_set_size(obj, 85, 16);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_color(obj, lv_color_hex(0xffe4ffff), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "City");
         }
     }
     

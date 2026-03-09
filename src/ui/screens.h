@@ -26,6 +26,7 @@ typedef struct _objects_t {
     lv_obj_t *toggle_forecast_container;
     lv_obj_t *temperature_grid;
     lv_obj_t *forecast_type_label;
+    lv_obj_t *current_city_label;
     lv_obj_t *obj1;
     lv_obj_t *obj2;
     lv_obj_t *ipv4_label;

@@ -5,7 +5,7 @@ The Aura2 project is a landscape layout weather widget inspired by the [Aura pro
 While the Aura project used the Arduino IDE, the Aura2 project uses Visual Studio Code with PlatformIO.
 
 The project also uses LVGL to render the UI. The original version uses a lot of C that manually creates and places widgets. This project uses
-EEZ Studio to visually layout the UI as much as possible.
+[EEZ Studio](https://www.envox.eu/studio/studio-introduction/) to visually layout the UI as much as possible.
 
 Since I was in learning mode, I may as well go overboard. This project also captures experiments with:
 
@@ -17,9 +17,9 @@ Since I was in learning mode, I may as well go overboard. This project also capt
 
 ### Prerequisites
 
-* Visual Studio Code
-* PlatformIO
-* A CYD
+* [Visual Studio Code](https://code.visualstudio.com/)
+* [PlatformIO](https://platformio.org/)
+* [A CYD](https://www.xda-developers.com/cheap-yellow-display-addition-smart-home/)
 
 ### Steps
 
