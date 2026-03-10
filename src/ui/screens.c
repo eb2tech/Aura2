@@ -65,13 +65,13 @@ void create_screen_setup() {
                 lv_obj_t *parent_obj = obj;
                 {
                     lv_obj_t *obj = lv_label_create(parent_obj);
-                    lv_obj_set_pos(obj, -7, -6);
+                    lv_obj_set_pos(obj, -7, 32);
                     lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
                     lv_label_set_text(obj, "WiFi ready:");
                 }
                 {
                     lv_obj_t *obj = lv_label_create(parent_obj);
-                    lv_obj_set_pos(obj, -4, 10);
+                    lv_obj_set_pos(obj, -4, 56);
                     lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
                     lv_label_set_text(obj, "IP:");
                 }
@@ -79,7 +79,7 @@ void create_screen_setup() {
                     // device_ssid_ready_label
                     lv_obj_t *obj = lv_label_create(parent_obj);
                     objects.device_ssid_ready_label = obj;
-                    lv_obj_set_pos(obj, 81, -6);
+                    lv_obj_set_pos(obj, 81, 32);
                     lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
                     lv_obj_set_style_text_color(obj, lv_color_hex(0xff00ff00), LV_PART_MAIN | LV_STATE_DEFAULT);
                     lv_label_set_text(obj, "Device SSID");
@@ -88,10 +88,16 @@ void create_screen_setup() {
                     // device_ip_label
                     lv_obj_t *obj = lv_label_create(parent_obj);
                     objects.device_ip_label = obj;
-                    lv_obj_set_pos(obj, 81, 10);
+                    lv_obj_set_pos(obj, 82, 56);
                     lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
                     lv_obj_set_style_text_color(obj, lv_color_hex(0xff00ff00), LV_PART_MAIN | LV_STATE_DEFAULT);
                     lv_label_set_text(obj, "Device IP");
+                }
+                {
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    lv_obj_set_pos(obj, -7, -6);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_label_set_text(obj, "Initializing...");
                 }
             }
         }

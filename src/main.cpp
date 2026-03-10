@@ -361,20 +361,12 @@ bool saveConfigCalledShouldReboot = false;
 
 void saveConfigCallback()
 {
-  Log.infoln("***** saveConfigCallback called *****");
+  Serial.println("***** saveConfigCallback called *****");
   saveConfigCalledShouldReboot = true;
 }
 
-// Add this function before showWiFiSplashScreen()
 bool isWiFiConfigValid()
 {
-  // Check if SSID is stored
-  if (!wifiManager.getWiFiIsSaved())
-  {
-    Log.infoln("No saved WiFi credentials");
-    return false;
-  }
-
   Serial.println("Testing WiFi connection to: " + WiFi.SSID());
 
   // Try to connect with timeout
@@ -475,15 +467,15 @@ void setupWifi()
     return;
   }
 
-  // Show splash screen for configuration
-  showWiFiSplashScreen();
-
   // Set callbacks
   wifiManager.setSaveConfigCallback(saveConfigCallback);
   wifiManager.setAPCallback(onWiFiManagerAPStarted);
 
   // Set timeout for captive portal (5 minutes)
   wifiManager.setConfigPortalTimeout(300);
+
+  // Show splash screen for configuration
+  showWiFiSplashScreen();
 
   // Update status before starting
   updateWiFiSplashStatus("Checking saved WiFi...", TFT_CYAN);
