@@ -207,20 +207,33 @@ bool itsDimTime()
   if (!dim_at_time)
     return false;
 
-  auto timeToMinutes = [](const String &timeStr)
+  auto timeToMinutes = [](int hour, int minute, bool adjustForDst = true)
+  {
+    if (adjustForDst)
+    {
+      hour += 1;
+      if (hour >= 24)
+        hour -= 24;
+    }
+
+    return hour * 60 + minute;
+  };
+
+  auto strTimeToMinutes = [=](const String &timeStr)
   {
     int hour = timeStr.substring(0, 2).toInt();
     int minute = timeStr.substring(3, 5).toInt();
-    return hour * 60 + minute;
+
+    return timeToMinutes(hour, minute, false);
   };
 
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo))
     return false;
-
-  int currentMinutes = timeinfo.tm_hour * 60 + timeinfo.tm_min;
-  int startMinutes = timeToMinutes(dim_start_time);
-  int endMinutes = timeToMinutes(dim_end_time);
+  
+  int currentMinutes = timeToMinutes(timeinfo.tm_hour, timeinfo.tm_min, use_dst);
+  int startMinutes = strTimeToMinutes(dim_start_time);
+  int endMinutes = strTimeToMinutes(dim_end_time);
 
   if (startMinutes < endMinutes)
   {
